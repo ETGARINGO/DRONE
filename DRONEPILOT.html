@@ -11,156 +11,206 @@
         :root {
             --tactical-blue: #00d4ff;
             --accent-green: #00ff66;
-            --siren-red: rgba(255, 0, 0, 0.4);
             --bg-black: #00050a;
+            --warning-red: #ff3333;
         }
 
         body, html { 
             margin: 0; padding: 0; height: 100%; width: 100%; 
             overflow: hidden; background-color: var(--bg-black); 
             font-family: 'Courier New', Courier, monospace;
+            color: var(--accent-green);
         }
 
-        /* EMERGENCY SIREN OVERLAY */
-        #siren-overlay {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            z-index: 50; pointer-events: none;
-            opacity: 0;
-        }
-
-        .siren-active {
-            animation: flushSiren 0.8s infinite;
-        }
-
-        @keyframes flushSiren {
-            0%, 100% { background-color: transparent; box-shadow: inset 0 0 0px transparent; }
-            50% { background-color: var(--siren-red); box-shadow: inset 0 0 100px rgba(255, 0, 0, 0.6); }
-        }
-
+        /* THE MAP LAYER */
         #map {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             z-index: 1;
-            filter: brightness(0.5) contrast(1.2) saturate(0.2) hue-rotate(180deg);
+            filter: brightness(0.6) contrast(1.2) saturate(0.3) sepia(0.5) hue-rotate(80deg);
+            transition: filter 2s ease;
         }
 
+        /* TARGETING RETICLE */
         #reticle {
-            position: absolute; top: 50%; left: 50%;
+            position: absolute;
+            top: 50%; left: 50%;
             transform: translate(-50%, -50%);
             width: 150px; height: 150px;
-            border: 2px solid var(--accent-green);
+            border: 1px solid var(--accent-green);
             border-radius: 50%;
-            z-index: 60; pointer-events: none;
+            z-index: 60;
+            pointer-events: none;
             opacity: 0;
-            animation: pulseReticle 1s infinite ease-in-out;
+            transition: opacity 0.5s ease;
         }
-
-        @keyframes pulseReticle {
-            0%, 100% { opacity: 0.3; transform: translate(-50%, -50%) scale(1); }
-            50% { opacity: 0.7; transform: translate(-50%, -50%) scale(1.05); }
+        #reticle::before, #reticle::after {
+            content: ""; position: absolute; background: var(--accent-green);
         }
+        #reticle::before { width: 140%; height: 1px; top: 50%; left: -20%; }
+        #reticle::after { width: 1px; height: 140%; left: 50%; top: -20%; }
 
+        /* UPLINK INTERFACE */
         #form-container {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            z-index: 100; display: none; opacity: 0;
-            background-color: #000;
-            transition: opacity 1s ease-in-out;
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 100;
+            display: none; 
+            opacity: 0;
+            background-color: var(--bg-black);
+            transition: opacity 1.5s ease-in-out;
+        }
+
+        #tactical-blend-overlay {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 110;
+            pointer-events: none;
+            background: 
+                linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%),
+                linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+            background-size: 100% 4px, 3px 100%;
+            opacity: 0.3;
         }
 
         iframe {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none; z-index: 105;
+            position: absolute;
+            top: 5%; left: 2%;
+            width: 96%; height: 90%; 
+            border: 1px solid var(--tactical-blue);
+            z-index: 105;
+            background: transparent;
+            box-shadow: 0 0 20px rgba(0, 212, 255, 0.2);
         }
 
+        /* HUD ELEMENTS */
         #hud-data {
-            position: absolute; top: 20px; left: 20px; z-index: 70;
-            color: var(--accent-green); font-size: 12px;
-            pointer-events: none; text-shadow: 0 0 5px #000;
+            position: absolute;
+            top: 20px; left: 20px;
+            z-index: 200;
+            font-size: 11px;
+            pointer-events: none;
+            text-shadow: 0 0 8px var(--accent-green);
+            letter-spacing: 1px;
         }
+
+        .scan-line {
+            position: absolute; width: 100%; height: 10px;
+            background: linear-gradient(to bottom, transparent, var(--tactical-blue), transparent);
+            z-index: 120;
+            top: -10px;
+            pointer-events: none;
+            animation: scan 3s linear infinite;
+            opacity: 0.4;
+        }
+        @keyframes scan { 0% { top: -10%; } 100% { top: 110%; } }
 
         .tactical-label {
-            background: rgba(0,0,0,0.8) !important; border: 1px solid var(--accent-green) !important;
-            color: var(--accent-green) !important; font-size: 10px !important;
-            padding: 2px 8px !important; border-radius: 0px;
+            background: rgba(0, 5, 10, 0.85) !important; 
+            border: 1px solid var(--tactical-blue) !important;
+            color: var(--tactical-blue) !important; 
+            font-size: 10px !important;
+            font-weight: bold;
         }
     </style>
 </head>
 <body oncontextmenu="return false;">
 
-    <div id="siren-overlay"></div>
     <div id="map"></div>
     <div id="reticle"></div>
     
     <div id="hud-data">
-        STATUS: <span id="status-text">INITIALIZING...</span><br>
-        COORD: <span id="current-coord">0.0000, 0.0000</span><br>
-        MODE: TACTICAL_RECON_RECOVERY
+        [ SYSTEM_OS: PRO9_RECON_v4.2 ]<br>
+        [ STATUS: <span id="status-text" style="color:white">INITIALIZING_SCAN</span> ]<br>
+        [ COORD: <span id="current-coord">---</span> ]<br>
+        [ UPLINK: <span id="uplink-status">OFFLINE</span> ]
     </div>
 
+    <!-- Data Interface -->
     <div id="form-container">
-        <iframe src="https://script.google.com/macros/s/AKfycbzvJifcj_nQkvV7mzky_ounblj4_eIFZtLtoeT-xCGXNEOhyuTfokJWmu4aFtCl5lel/exec"></iframe>
+        <div id="tactical-blend-overlay"></div>
+        <div class="scan-line"></div>
+        <iframe id="target-frame" src="about:blank"></iframe>
     </div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
     <script>
+        const GOOGLE_UPLINK = "https://script.google.com/macros/s/AKfycbzvJifcj_nQkvV7mzky_ounblj4_eIFZtLtoeT-xCGXNEOhyuTfokJWmu4aFtCl5lel/exec";
+
         const scanPoints = [
-            {n: "SULU", p: [6.0, 121.0], z: 12},
-            {n: "ISABELA CITY", p: [6.70, 121.97], z: 12},
-            {n: "ZAMBOANGA CITY", p: [6.92, 122.07], z: 12},
-            {n: "ZAMBOANGA SIBUGAY", p: [7.78, 122.58], z: 10},
-            {n: "ZAMBOANGA DEL NORTE", p: [8.15, 123.00], z: 10},
-            {n: "ZAMBOANGA DEL SUR", p: [7.90, 123.40], z: 10},
-            {n: "REGIONAL_COVERAGE", p: [7.7, 122.8], z: 8}
+            {n: "SULU_ARCHIPELAGO", p: [6.0, 121.0], z: 10},
+            {n: "ISABELA_SECTOR", p: [6.70, 121.97], z: 12},
+            {n: "ZAMBOANGA_HQ", p: [6.92, 122.07], z: 14},
+            {n: "SIBUGAY_DISTRICT", p: [7.78, 122.58], z: 11},
+            {n: "ZN_PROVINCE", p: [8.15, 123.00], z: 10},
+            {n: "ZS_PROVINCE", p: [7.90, 123.40], z: 10},
+            {n: "ZAMPEN_WIDE_LOCK", p: [7.7, 122.8], z: 8}
         ];
 
-        // LOGO CONFIGURATION
-        const pinLogo = L.icon({
-            iconUrl: 'PIN LOGO.png',
-            iconSize: [40, 40], // Adjust size as needed
-            iconAnchor: [20, 20],
-            popupAnchor: [0, -20]
-        });
+        const map = L.map('map', { 
+            zoomControl: false, 
+            attributionControl: false,
+            dragging: false,
+            scrollWheelZoom: false
+        }).setView(scanPoints[0].p, 8);
 
-        const map = L.map('map', { zoomControl: false, attributionControl: false }).setView(scanPoints[0].p, 8);
         L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}').addTo(map);
 
-        const hudCoord = document.getElementById('current-coord');
         const statusText = document.getElementById('status-text');
+        const hudCoord = document.getElementById('current-coord');
+        const uplinkStatus = document.getElementById('uplink-status');
         const reticle = document.getElementById('reticle');
-        const siren = document.getElementById('siren-overlay');
 
-        async function startTacticalScan() {
+        async function runTacticalSequence() {
             reticle.style.opacity = "1";
-            siren.classList.add('siren-active'); // Start the siren effect
             
             for (let i = 0; i < scanPoints.length; i++) {
                 const point = scanPoints[i];
-                statusText.innerText = `RECON_TARGET: ${point.n}`;
-                hudCoord.innerText = `${point.p[0].toFixed(4)}N, ${point.p[1].toFixed(4)}E`;
+                statusText.innerText = `SCANNING_${point.n}`;
+                statusText.style.color = "var(--accent-green)";
+                hudCoord.innerText = `${point.p[0].toFixed(4)}N / ${point.p[1].toFixed(4)}E`;
                 
-                map.flyTo(point.p, point.z, { duration: 1.5, easeLinearity: 0.25 });
+                map.flyTo(point.p, point.z, {
+                    duration: 1.2,
+                    easeLinearity: 0.1
+                });
 
-                // Place PIN LOGO.png marker
-                L.marker(point.p, { icon: pinLogo }).addTo(map)
-                    .bindTooltip(point.n, { permanent: true, direction: 'top', className: 'tactical-label' });
+                L.circleMarker(point.p, {
+                    radius: 8, color: '#00d4ff', fillColor: '#00d4ff', fillOpacity: 0.5
+                }).addTo(map).bindTooltip(point.n, {
+                    permanent: true, direction: 'right', className: 'tactical-label'
+                });
 
-                await new Promise(r => setTimeout(r, 2000));
+                await new Promise(r => setTimeout(r, 1500));
             }
 
-            siren.classList.remove('siren-active'); // Stop siren on link
-            transitionToInterface();
+            establishUplink();
         }
 
-        function transitionToInterface() {
+        function establishUplink() {
+            statusText.innerText = "UPLINK_SYNCHRONIZING...";
+            statusText.style.color = "var(--tactical-blue)";
+            uplinkStatus.innerText = "CONNECTING...";
+            
             const container = document.getElementById('form-container');
-            statusText.innerText = "UPLINK_STABLE";
-            container.style.display = "block";
-            setTimeout(() => { 
-                container.style.opacity = "1";
-                reticle.style.opacity = "0";
-            }, 50);
+            const frame = document.getElementById('target-frame');
+            
+            // Warm up the iframe
+            frame.src = GOOGLE_UPLINK;
+            
+            setTimeout(() => {
+                container.style.display = "block";
+                setTimeout(() => {
+                    container.style.opacity = "1";
+                    uplinkStatus.innerText = "STABLE";
+                    uplinkStatus.style.color = "var(--accent-green)";
+                    statusText.innerText = "DATA_STREAM_ACTIVE";
+                    document.getElementById('map').style.filter = "brightness(0.2) blur(5px)";
+                }, 50);
+            }, 1000);
         }
 
-        window.onload = startTacticalScan;
+        window.onload = runTacticalSequence;
     </script>
 </body>
 </html>
