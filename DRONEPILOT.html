@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>PRO9 | TACTICAL AERIAL VIEW</title>
+    <title>PRO9 | TACTICAL DATA ENTRY</title>
     
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     
@@ -24,7 +24,6 @@
         #map {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             z-index: 1;
-            /* Tactical Satellite Color Grade */
             filter: brightness(0.4) contrast(1.4) saturate(0.6) hue-rotate(185deg);
         }
 
@@ -39,25 +38,41 @@
             pointer-events: none;
             filter: drop-shadow(0 0 20px var(--tactical-blue));
             opacity: 0;
-            /* Animation: Starts huge (zoomed in) and shrinks (zoom out effect) */
             animation: tacticalZoomOut 2.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
         }
 
-        /* 3. THE FORM CONTAINER (WITH BLEND.png) */
+        /* 3. THE FORM CONTAINER */
         #form-container {
             position: absolute;
             top: 0; left: 0; width: 100%; height: 100%;
             z-index: 100;
             display: none; opacity: 0;
-            /* Using BLEND.png as the tactical background for the form */
-            background: url('BLEND.png') no-repeat center/cover;
+            background-color: white; /* Base layer for the form */
             transition: opacity 1s ease-in-out;
         }
 
+        /* 4. THE BLEND OVERLAY - This is the key change */
+        #tactical-blend-overlay {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            /* Using BLEND.png as a fixed texture over the form */
+            background: url('BLEND.png') no-repeat center/cover;
+            z-index: 110; /* Higher than iframe */
+            pointer-events: none; /* Crucial: allows clicks to pass through to the form */
+            
+            /* Choose one blend mode that looks best with your BLEND.png: */
+            mix-blend-mode: screen; /* Lightens and applies texture. Good if BLEND.png is dark with glowing lines */
+            /* mix-blend-mode: overlay; */ /* More intense color mixing */
+            /* mix-blend-mode: multiply; */ /* Darkens the form. Good if BLEND.png is bright tactical green */
+            
+            opacity: 0.8; /* Adjust overall intensity of the overlay */
+        }
+
         iframe {
+            position: absolute;
+            top: 0; left: 0;
             width: 100%; height: 100%; border: none;
-            /* Makes form slightly transparent to see BLEND.png through it if form is clear */
-            background: transparent; 
+            z-index: 105; /* Below the blend overlay */
         }
 
         /* ZOOM OUT ANIMATION */
@@ -85,7 +100,9 @@
         .scan-line {
             position: absolute; width: 100%; height: 2px;
             background: rgba(0, 212, 255, 0.2);
-            z-index: 60; top: 0;
+            z-index: 120; /* On top of everything */
+            top: 0;
+            pointer-events: none;
             animation: scan 4s linear infinite;
         }
         @keyframes scan { 0% { top: 0; } 100% { top: 100%; } }
@@ -101,10 +118,14 @@
 
     <div id="map"></div>
     <div id="zoom-pin"></div>
-    <div class="scan-line"></div>
+    
 
     <!-- The Data Interface -->
     <div id="form-container">
+        <!-- BLEND.png applied OVER the form -->
+        <div id="tactical-blend-overlay"></div>
+        <div class="scan-line"></div>
+        
         <iframe src="https://script.google.com/macros/s/AKfycbzvJifcj_nQkvV7mzky_ounblj4_eIFZtLtoeT-xCGXNEOhyuTfokJWmu4aFtCl5lel/exec"></iframe>
     </div>
 
@@ -113,9 +134,9 @@
     <script>
         // Coordinate Setup
         const SULU = [6.0, 121.0];
-        const ZAMPEN_AOR = [7.7, 122.8]; // Pull out to see everything
+        const ZAMPEN_AOR = [7.7, 122.8]; 
 
-        // Initialize Map: Start zoomed into Sulu
+        // Initialize Map
         const map = L.map('map', { 
             zoomControl: false, 
             attributionControl: false 
@@ -124,24 +145,22 @@
         L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}').addTo(map);
 
         function startAerialSequence() {
-            // 1. Sync Map Zoom with CSS Animation
             setTimeout(() => {
                 map.flyTo(ZAMPEN_AOR, 8, {
-                    duration: 3, // Matches the feel of the zoom-out
+                    duration: 3, 
                     easeLinearity: 0.1
                 });
-                
-                // Add Tactical Markers during flight
                 addNodes();
             }, 500);
 
-            // 2. Transition to Form with BLEND.png background
+            // Transition to Form
             setTimeout(() => {
                 const container = document.getElementById('form-container');
                 container.style.display = "block";
                 setTimeout(() => { 
                     container.style.opacity = "1";
-                    document.getElementById('map').style.display = "none"; 
+                    // Brief delay before hiding map to prevent white flash
+                    setTimeout(()=> { document.getElementById('map').style.display = "none"; }, 500);
                 }, 50);
             }, 3500);
         }
@@ -150,9 +169,7 @@
             const locations = [
                 {n: "SULU SECTOR", p: [6.0, 121.0]},
                 {n: "ZAMBOANGA CITY", p: [6.92, 122.07]},
-                {n: "IPIL", p: [7.78, 122.58]},
-                {n: "PAGADIAN", p: [7.82, 123.43]},
-                {n: "DIPOLOG", p: [8.58, 123.34]}
+                {n: "PAGADIAN", p: [7.82, 123.43]}
             ];
 
             locations.forEach((loc, i) => {
