@@ -1,1 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tactical Map Access</title>
+    <style>
+        :root {
+            --map-blend: #1a237e; /* Navy/Tactical blue shade for blending */
+            --accent-green: #00e676; /* Bright tactical HUD green */
+        }
 
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: var(--map-blend);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: 'Courier New', Courier, monospace; /* Monospace for tactical feel */
+            color: #fff;
+        }
+
+        /* 1. Full Screen Overlay for Lighting/Atmospheric Blend */
+        #blend-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: url('BLEND.png');
+            background-size: cover;
+            background-position: center;
+            mix-blend-mode: overlay;
+            z-index: 5;
+            pointer-events: none;
+            opacity: 0;
+            animation: startBlend 0.3s ease-out forwards;
+        }
+
+        /* 2. Central Tactical Marker (Pin) */
+        #tactical-marker {
+            position: absolute;
+            z-index: 10;
+            width: 80px; /* Large marker starting size */
+            height: 80px;
+            background-image: url('PIN LOGO.png');
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+            filter: drop-shadow(0 0 10px var(--accent-green));
+            opacity: 0;
+            transform: scale(3);
+            animation: markerDrop 1s cubic-bezier(0.19, 1, 0.22, 1) 0.1s forwards;
+        }
+
+        /* 3. The Iframe Container (The Map/Form) */
+        .map-frame-container {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            z-index: 1;
+            /* Start zoomed all the way into the specific pin location */
+            transform: scale(20); 
+            transform-origin: center center;
+            filter: brightness(0.2) contrast(1.5) blur(10px); /* Deep blend before reveal */
+            animation: aerialZoomOut 3s cubic-bezier(0.23, 1, 0.32, 1) 1.2s forwards;
+        }
+
+        iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+            position: relative;
+        }
+
+        /* Lightning / Atmospheric Blend Pulse */
+        @keyframes startBlend {
+            0% { opacity: 0; }
+            30% { opacity: 1; }
+            40% { opacity: 0.2; }
+            50% { opacity: 1; }
+            100% { opacity: 0.8; }
+        }
+
+        /* 2. Tactical Marker Drop (Target Acquired) */
+        @keyframes markerDrop {
+            0% { opacity: 0; transform: scale(5) translateY(-200px); filter: brightness(3); }
+            50% { opacity: 1; transform: scale(1.5) translateY(0px); filter: brightness(1); }
+            80% { transform: scale(1); filter: drop-shadow(0 0 20px var(--accent-green)); }
+            100% { opacity: 1; transform: scale(0); /* Fades into the map */ }
+        }
+
+        /* 3. Aerial Zoom Out Sequence (Satellite View Pullback) */
+        @keyframes aerialZoomOut {
+            0% {
+                opacity: 0;
+                transform: scale(20);
+                filter: brightness(0.2) contrast(1.5) blur(15px);
+            }
+            15% {
+                opacity: 1;
+                filter: brightness(0.5) contrast(1.2) blur(8px);
+            }
+            40% {
+                transform: scale(8);
+                filter: brightness(0.8) contrast(1.1) blur(3px);
+            }
+            70% {
+                transform: scale(2);
+                filter: brightness(1) contrast(1) blur(0px);
+            }
+            100% {
+                opacity: 1;
+                transform: scale(1);
+                filter: brightness(1) contrast(1) blur(0px);
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 1. Atmospheric Blend Overlay -->
+    <div id="blend-overlay"></div>
+
+    <!-- 2. The Tactical Pin Target -->
+    <div id="tactical-marker"></div>
+
+    <!-- 3. The Map Frame (The Google Apps Script Form) -->
+    <div class="map-frame-container">
+        <iframe 
+            src="https://script.google.com/macros/s/AKfycbzvJifcj_nQkvV7mzky_ounblj4_eIFZtLtoeT-xCGXNEOhyuTfokJWmu4aFtCl5lel/exec"
+            title="Tactical Data Input"
+            allow="autoplay; geolocation">
+        </iframe>
+    </div>
+
+</body>
+</html>
