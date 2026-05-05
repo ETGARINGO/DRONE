@@ -46,15 +46,19 @@
         #header-logo { height: 38px; margin-right: 15px; filter: drop-shadow(0 0 8px var(--tactical-blue)); }
         #header-title { font-weight: bold; letter-spacing: 4px; font-size: 14px; color: #fff; text-shadow: 0 0 10px var(--tactical-blue); }
 
-        #siren-overlay {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            z-index: 400; pointer-events: none; opacity: 0;
+        /* FLOATING TOGGLE BUTTON */
+        #folder-toggle-btn {
+            position: fixed; right: 20px; top: 80px; z-index: 2000;
+            background: rgba(0, 20, 40, 0.8);
+            border: 1px solid var(--tactical-blue);
+            color: var(--tactical-blue);
+            padding: 10px; cursor: pointer;
+            font-family: inherit; font-size: 10px; font-weight: bold;
+            box-shadow: var(--ui-glow);
+            transition: all 0.3s ease;
+            text-transform: uppercase;
         }
-        .siren-active { animation: sirenFlush 0.8s infinite alternate; }
-        @keyframes sirenFlush {
-            from { opacity: 0; }
-            to { opacity: 1; background: radial-gradient(circle, transparent 30%, var(--warning-red) 100%); }
-        }
+        #folder-toggle-btn:hover { background: var(--tactical-blue); color: #000; }
 
         #map {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
@@ -96,31 +100,55 @@
 
         .viewport-grid {
             position: absolute; top: 80px; left: 2%; width: 96%; height: 85%;
-            display: grid; grid-template-columns: 1fr 1fr; gap: 20px; z-index: 10;
+            display: grid; 
+            grid-template-columns: 1fr 1fr;
+            gap: 20px; z-index: 10;
+            transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .viewport-grid.hide-archive {
+            grid-template-columns: 1fr 0fr;
+            gap: 0;
         }
 
         .pane {
             display: flex; flex-direction: column;
             border: 1px solid rgba(0, 212, 255, 0.3);
             background: var(--glass); border-radius: 4px; overflow: hidden;
+            transition: opacity 0.4s ease, transform 0.4s ease;
+        }
+
+        #folder-pane { transform-origin: right; }
+        .hide-archive #folder-pane {
+            opacity: 0; transform: scaleX(0); pointer-events: none;
         }
 
         .pane-header {
             background: rgba(0, 212, 255, 0.1); padding: 8px 15px;
             font-size: 10px; letter-spacing: 2px; color: var(--tactical-blue);
             border-bottom: 1px solid rgba(0, 212, 255, 0.3);
-            display: flex; justify-content: space-between;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+
+        .sync-indicator {
+            font-size: 8px; color: var(--accent-green);
+            animation: blink 2s infinite;
+        }
+
+        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+        .view-toggle-btn {
+            background: rgba(0, 212, 255, 0.2);
+            border: 1px solid var(--tactical-blue);
+            color: #fff; padding: 2px 8px; font-size: 9px;
+            cursor: pointer; transition: all 0.3s;
         }
 
         iframe { width: 100%; height: 100%; border: none; background: transparent; }
 
         @media (max-width: 800px) {
             .viewport-grid { grid-template-columns: 1fr; grid-template-rows: 1fr 1fr; top: 70px; height: 88%; }
-        }
-
-        .tactical-label {
-            background: rgba(0, 10, 20, 0.9) !important; border: 1px solid var(--tactical-blue) !important;
-            color: var(--tactical-blue) !important; font-family: monospace !important;
+            .viewport-grid.hide-archive { grid-template-rows: 1fr 0fr; }
         }
 
         @keyframes pulseBackground { from { transform: scale(1); opacity: 0.15; } to { transform: scale(1.05); opacity: 0.3; } }
@@ -133,33 +161,36 @@
         <div id="header-title">DRONE_PILOT | MISSION CONTROL</div>
     </header>
 
-    <div id="siren-overlay"></div>
+    <button id="folder-toggle-btn" onclick="toggleFolder()">[ RECEIPTS: VISIBLE ]</button>
+
+    <div id="siren-overlay" style="position:absolute; top:0; left:0; width:100%; height:100%; z-index:400; pointer-events:none; opacity:0;"></div>
     <div id="map"></div>
     <div id="reticle"></div>
     
     <div id="hud-data">
-        <span style="color:rgba(0,255,102,0.5)">// SATELLITE_UPLINK_v4.0 //</span><br>
+        <span style="color:rgba(0,255,102,0.5)">// SATELLITE_UPLINK_v4.1 //</span><br>
         STATUS: <span id="status-text" style="color:#fff">BOOTING...</span><br>
         TARGET: <span id="current-coord" style="color:#fff">---</span><br>
-        ALARM: <span id="alert-status" style="color:#fff">IDLE</span>
+        ALARM: <span id="alert-status" style="color:#fff">IDLE</span><br>
+        SYNC: <span id="sync-timer" style="color:var(--accent-green)">AUTO</span>
     </div>
 
     <div id="command-interface">
         <img src="BLEND.png" id="logo-blend-bg" alt="Background">
         
-        <div class="viewport-grid">
-            <div class="pane">
+        <div class="viewport-grid" id="main-grid">
+            <div class="pane" id="input-pane">
                 <div class="pane-header">
-                    <span>> SECURE_DATA_INPUT</span>
+                    <span>> ORDER_DATA_INPUT</span>
                     <span style="color: var(--accent-green);">ONLINE</span>
                 </div>
                 <iframe id="order-frame" src="about:blank"></iframe>
             </div>
 
-            <div class="pane">
+            <div class="pane" id="folder-pane">
                 <div class="pane-header">
-                    <span>> CLOUD_ARCHIVE_SULU</span>
-                    <span style="color: var(--accent-green);">SYNCED</span>
+                    <span>> CLOUD_ARCHIVE_SULU <span class="sync-indicator" id="sync-icon">● LIVE_SYNC</span></span>
+                    <button class="view-toggle-btn" onclick="toggleView()">TOGGLE_VIEWMODE</button>
                 </div>
                 <iframe id="folder-frame" src="about:blank"></iframe>
             </div>
@@ -169,12 +200,12 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
     <script>
-        // CONFIGURATION
         const GOOGLE_UPLINK = "https://script.google.com/macros/s/AKfycbx0IUHNG3c4wIKqiluVJ_bDa9XMQ5UaAA7jYLaMQgfezWnZ6E4AbDrmGgumqd238zHN/exec";
-        
-        // FIXED: Using the embeddedfolderview format to prevent the 403 error seen in image_e799f2.png
         const DRIVE_FOLDER_ID = "101-9iC3lCeXIuJ3ukWtW9Gxq5bdl0qKT";
-        const DRIVE_EMBED_URL = `https://drive.google.com/embeddedfolderview?id=${DRIVE_FOLDER_ID}#list`;
+        const REFRESH_RATE = 30000; // 30 Seconds Auto-Sync
+        
+        let currentView = "grid"; 
+        const getEmbedURL = (mode) => `https://drive.google.com/embeddedfolderview?id=${DRIVE_FOLDER_ID}#${mode}`;
 
         const pinIcon = L.icon({
             iconUrl: 'PIN LOGO.png',
@@ -186,10 +217,7 @@
             {n: "SULU_ARCHIPELAGO", p: [6.0, 121.0], z: 10},
             {n: "ISABELA_SECTOR", p: [6.70, 121.97], z: 12},
             {n: "ZAMBOANGA_HQ", p: [6.92, 122.07], z: 14},
-            {n: "SIBUGAY_DISTRICT", p: [7.78, 122.58], z: 11},
-            {n: "ZN_PROVINCE", p: [8.15, 123.00], z: 10},
-            {n: "ZS_PROVINCE", p: [7.90, 123.40], z: 10},
-            {n: "ZAMPEN_FINAL_LOCK", p: [7.7, 122.8], z: 8}
+            {n: "ZAMPEN_LOCK", p: [7.7, 122.8], z: 8}
         ];
 
         const map = L.map('map', { 
@@ -202,50 +230,75 @@
         const statusText = document.getElementById('status-text');
         const hudCoord = document.getElementById('current-coord');
         const alertStatus = document.getElementById('alert-status');
-        const siren = document.getElementById('siren-overlay');
         const reticle = document.getElementById('reticle');
 
         async function runTacticalSequence() {
             await new Promise(r => setTimeout(r, 1000));
-            
             reticle.style.opacity = "1";
-            siren.classList.add('siren-active'); 
             alertStatus.innerText = "SATELLITE_LOCK";
             alertStatus.style.color = "#ff3333";
             
             for (const point of scanPoints) {
                 statusText.innerText = `SCANNING_${point.n}`;
                 hudCoord.innerText = `${point.p[0].toFixed(4)}N / ${point.p[1].toFixed(4)}E`;
-                map.flyTo(point.p, point.z, { duration: 1.2, easeLinearity: 0.1 });
-                L.marker(point.p, { icon: pinIcon }).addTo(map)
-                    .bindTooltip(point.n, { permanent: true, direction: 'right', className: 'tactical-label' });
-                await new Promise(r => setTimeout(r, 1800));
+                map.flyTo(point.p, point.z, { duration: 1.2 });
+                L.marker(point.p, { icon: pinIcon }).addTo(map);
+                await new Promise(r => setTimeout(r, 1500));
             }
-
-            siren.classList.remove('siren-active'); 
             initializeCommandCenter();
         }
 
         function initializeCommandCenter() {
             const commandUI = document.getElementById('command-interface');
             const orderFrame = document.getElementById('order-frame');
-            const folderFrame = document.getElementById('folder-frame');
             
             alertStatus.innerText = "ACTIVE";
             alertStatus.style.color = "var(--accent-green)";
             statusText.innerText = "UPLINK_ESTABLISHED";
             
-            // Load both frames
             orderFrame.src = GOOGLE_UPLINK;
-            folderFrame.src = DRIVE_EMBED_URL;
+            refreshFolder(); // Initial load
+            
+            commandUI.style.display = "block";
+            setTimeout(() => {
+                commandUI.style.opacity = "1";
+                document.getElementById('map').style.filter = "brightness(0.05) blur(25px)";
+            }, 100);
+
+            // AUTO-SYNC HEARTBEAT
+            setInterval(refreshFolder, REFRESH_RATE);
+        }
+
+        function refreshFolder() {
+            const folderFrame = document.getElementById('folder-frame');
+            const syncIcon = document.getElementById('sync-icon');
+            
+            // Visual feedback of sync
+            syncIcon.innerText = "● SYNCING...";
+            syncIcon.style.color = "var(--tactical-blue)";
+            
+            // Reload the iframe to reflect new files
+            folderFrame.src = getEmbedURL(currentView);
             
             setTimeout(() => {
-                commandUI.style.display = "block";
-                setTimeout(() => {
-                    commandUI.style.opacity = "1";
-                    document.getElementById('map').style.filter = "brightness(0.05) blur(25px)";
-                }, 100);
-            }, 800);
+                syncIcon.innerText = "● LIVE_SYNC";
+                syncIcon.style.color = "var(--accent-green)";
+            }, 2000);
+        }
+
+        function toggleFolder() {
+            const grid = document.getElementById('main-grid');
+            const btn = document.getElementById('folder-toggle-btn');
+            grid.classList.toggle('hide-archive');
+            
+            const isHidden = grid.classList.contains('hide-archive');
+            btn.innerText = isHidden ? "[ RECEIPT: HIDDEN ]" : "[ RECEIPT: VISIBLE ]";
+            btn.style.borderColor = isHidden ? "var(--warning-red)" : "var(--tactical-blue)";
+        }
+
+        function toggleView() {
+            currentView = (currentView === "grid") ? "list" : "grid";
+            refreshFolder();
         }
 
         window.onload = runTacticalSequence;
