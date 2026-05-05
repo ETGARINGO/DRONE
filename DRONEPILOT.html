@@ -2,157 +2,146 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PRO9 | TACTICAL SATELLITE INTERFACE</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>PRO9 | TACTICAL ZAMPEN DEPLOYMENT</title>
     
-    <!-- Leaflet Mapping Engine -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     
     <style>
         :root {
             --tactical-blue: #00d4ff;
-            --defense-green: #00ff66;
-            --alert-gold: #ffcc00;
+            --accent-green: #00ff66;
             --bg-black: #00050a;
         }
 
         body, html { 
             margin: 0; padding: 0; height: 100%; width: 100%; 
             overflow: hidden; background-color: var(--bg-black); 
-            font-family: 'Courier New', Courier, monospace;
+            font-family: 'Courier New', monospace;
         }
 
-        /* 1. Live Satellite Layer */
+        /* Tactical Map Filter */
         #map {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             z-index: 1;
-            filter: brightness(0.5) contrast(1.4) saturate(0.5) hue-rotate(180deg);
+            filter: brightness(0.5) contrast(1.2) saturate(0.5) hue-rotate(180deg);
+            background: var(--bg-black);
         }
 
-        /* 2. Tactical HUD Overlay */
-        #hud {
+        /* 1. Atmospheric Blend Overlay */
+        #blend-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            z-index: 10; pointer-events: none;
-            background: radial-gradient(circle at center, transparent 40%, rgba(0, 10, 20, 0.6) 100%);
+            background: radial-gradient(circle, transparent 20%, rgba(0, 5, 10, 0.8) 100%);
+            z-index: 5; pointer-events: none;
         }
 
-        /* Corner Brackets */
-        .corner {
-            position: absolute; width: 40px; height: 40px;
-            border: 2px solid var(--tactical-blue); opacity: 0.7;
-        }
-        .tl { top: 20px; left: 20px; border-right: 0; border-bottom: 0; }
-        .tr { top: 20px; right: 20px; border-left: 0; border-bottom: 0; }
-        .bl { bottom: 20px; left: 20px; border-right: 0; border-top: 0; }
-        .br { bottom: 20px; right: 20px; border-left: 0; border-top: 0; }
-
-        /* Telemetry Data */
-        .telemetry {
-            position: absolute; background: rgba(0, 20, 40, 0.8);
-            padding: 15px; border-left: 3px solid var(--defense-green);
-            font-size: 11px; color: var(--defense-green);
-            text-transform: uppercase; letter-spacing: 2px;
-        }
-        #sector-info { top: 60px; left: 40px; }
-        #gps-data { bottom: 60px; right: 40px; text-align: right; border-left: 0; border-right: 3px solid var(--alert-gold); color: var(--alert-gold); }
-
-        /* Scanning Line */
-        .scanner {
-            position: absolute; width: 100%; height: 2px;
-            background: var(--tactical-blue); opacity: 0.3;
-            box-shadow: 0 0 15px var(--tactical-blue);
-            animation: scan 4s linear infinite;
+        /* 2. Central Tactical Marker (Sulu Lock-on) */
+        #tactical-marker {
+            position: absolute; top: 50%; left: 50%;
+            margin-left: -40px; margin-top: -40px;
+            z-index: 10; width: 80px; height: 80px;
+            background: url('PIN LOGO.png') no-repeat center/contain;
+            filter: drop-shadow(0 0 15px var(--accent-green));
+            pointer-events: none;
+            opacity: 0;
+            animation: markerImpact 1.5s cubic-bezier(0.19, 1, 0.22, 1) forwards;
         }
 
-        @keyframes scan { 0% { top: 0%; } 100% { top: 100%; } }
-
-        /* Secure Data Form (Iframe) */
+        /* 3. Secure Data Frame (Hidden until Zoom finishes) */
         #secure-frame {
             position: absolute; width: 100%; height: 100%; border: none;
             z-index: 100; opacity: 0; display: none;
-            transition: opacity 1.5s ease-in-out;
+            transition: opacity 1s ease-in;
         }
 
-        /* Center Target */
-        .target-reticle {
-            position: absolute; top: 50%; left: 50%;
-            transform: translate(-50%, -50%);
-            width: 100px; height: 100px;
-            border: 1px solid var(--defense-green);
-            border-radius: 50%;
-            opacity: 0.5;
-            animation: pulse 2s infinite;
+        /* Animations */
+        @keyframes markerImpact {
+            0% { opacity: 0; transform: scale(10); filter: brightness(5); }
+            50% { opacity: 1; transform: scale(1); filter: brightness(1); }
+            100% { opacity: 0; transform: scale(0.5); }
         }
 
-        @keyframes pulse { 0% { transform: translate(-50%, -50%) scale(1); } 50% { transform: translate(-50%, -50%) scale(1.2); opacity: 0.8; } 100% { transform: translate(-50%, -50%) scale(1); } }
+        .tactical-label {
+            background: rgba(0, 212, 255, 0.1) !important;
+            border: 1px solid var(--tactical-blue) !important;
+            color: var(--tactical-blue) !important;
+            font-weight: bold; font-size: 10px;
+            text-transform: uppercase; letter-spacing: 1px;
+        }
     </style>
 </head>
-<body>
+<body oncontextmenu="return false;">
 
     <div id="map"></div>
+    <div id="blend-overlay"></div>
+    <div id="tactical-marker"></div>
 
-    <div id="hud">
-        <div class="scanner"></div>
-        <div class="corner tl"></div><div class="corner tr"></div>
-        <div class="corner bl"></div><div class="corner br"></div>
-        <div class="target-reticle"></div>
-
-        <div id="sector-info" class="telemetry">
-            [SYS] SATELLITE LINK: PRO9<br>
-            [LOC] SECTOR: SULU / ZAMPEN<br>
-            [NET] ENCRYPTED FEED_
-        </div>
-
-        <div id="gps-data" class="telemetry">
-            LAT: <span id="lat">0.000</span><br>
-            LNG: <span id="lng">0.000</span><br>
-            [STATUS]: RECON IN PROGRESS
-        </div>
-    </div>
-
-    <!-- Your Google Script Form -->
     <iframe id="secure-frame" 
-            src="https://script.google.com/macros/s/AKfycbzvJifcj_nQkvV7mzky_ounblj4_eIFZtLtoeT-xCGXNEOhyuTfokJWmu4aFtCl5lel/exec"
-            onload="triggerSequence()">
+            src="https://script.google.com/macros/s/AKfycbzvJifcj_nQkvV7mzky_ounblj4_eIFZtLtoeT-xCGXNEOhyuTfokJWmu4aFtCl5lel/exec" 
+            allow="geolocation">
     </iframe>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
     <script>
-        // Initialize Map focusing on Sulu Archipeligo initially
-        const map = L.map('map', { zoomControl: false, attributionControl: false }).setView([6.05, 121.0], 14);
+        // COORDINATES: [Lat, Long]
+        const SULU = [6.0, 121.0];
+        const ZAMPEN_CENTER = [7.8, 123.0]; // Centered view of Zamboanga Peninsula
 
-        // Professional Satellite Imagery
+        // Initialize Map locked on SULU (High Zoom)
+        const map = L.map('map', { 
+            zoomControl: false, 
+            attributionControl: false 
+        }).setView(SULU, 12);
+
+        // Dark Satellite Imagery
         L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}').addTo(map);
 
-        function triggerSequence() {
+        async function startTacticalSequence() {
             const frame = document.getElementById('secure-frame');
-            
-            // 1. Zoom Out Animation (Sulu to ZAMPEN Overview)
+
+            // Wait for Marker Impact, then Start Pullback
             setTimeout(() => {
-                map.flyTo([7.8, 123.0], 8, {
+                // Fly from Sulu to Overall ZAMPEN
+                map.flyTo(ZAMPEN_CENTER, 8, {
                     animate: true,
-                    duration: 5.0
+                    duration: 4, // Smooth long transition
+                    easeLinearity: 0.1
                 });
-            }, 1000);
+                
+                // Add Tactical Nodes during flight
+                addRegionalNodes();
+            }, 1200);
 
-            // 2. Telemetry Update Simulation
-            let latDisp = document.getElementById('lat');
-            let lngDisp = document.getElementById('lng');
-            setInterval(() => {
-                latDisp.innerText = (map.getCenter().lat + (Math.random() * 0.01)).toFixed(4);
-                lngDisp.innerText = (map.getCenter().lng + (Math.random() * 0.01)).toFixed(4);
-            }, 150);
-
-            // 3. Handover to Google Script Form
+            // Final Phase: Reveal Secure Data Frame
             setTimeout(() => {
                 frame.style.display = "block";
-                setTimeout(() => {
-                    frame.style.opacity = "1";
-                    document.getElementById('hud').style.opacity = "0";
-                }, 100);
-            }, 6000);
+                setTimeout(() => { frame.style.opacity = "1"; }, 100);
+            }, 5500);
         }
+
+        function addRegionalNodes() {
+            const provinces = [
+                { name: "Sulu Node", pos: [6.0, 121.0] },
+                { name: "Zamboanga City", pos: [6.92, 122.07] },
+                { name: "Zamboanga Sibugay", pos: [7.7, 122.5] },
+                { name: "Zamboanga del Sur", pos: [7.8, 123.3] },
+                { name: "Zamboanga del Norte", pos: [8.2, 123.0] }
+            ];
+
+            provinces.forEach((p, i) => {
+                setTimeout(() => {
+                    L.circleMarker(p.pos, {
+                        radius: 5, color: '#00ff66', fillColor: '#00ff66', fillOpacity: 0.8
+                    }).addTo(map).bindTooltip(p.name, {
+                        permanent: true, direction: 'top', className: 'tactical-label'
+                    });
+                }, i * 400 + 1500); // Nodes pop up as we zoom out
+            });
+        }
+
+        // Start when page loads
+        window.onload = startTacticalSequence;
     </script>
 </body>
 </html>
