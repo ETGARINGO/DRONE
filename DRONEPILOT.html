@@ -2,162 +2,155 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PRO9 Tactical Map: ZAMPEN Sector</title>
+    <link rel="icon" type="image/png" href="pro9 logo.png">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>PRO9 | TACTICAL DRONE FEED - ZAMPEN/SULU</title>
+    
+    <!-- Leaflet Engine for Real Mapping -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    
     <style>
         :root {
             --tactical-blue: #00d4ff;
-            --pnp-blue: #1a237e;
-            --accent-green: #00e676;
+            --defense-green: #00ff66;
+            --alert-red: #ff1744;
+            --bg-black: #000a0f;
         }
 
-        body, html {
-            margin: 0;
-            padding: 0;
-            width: 100%;
-            height: 100%;
-            overflow: hidden;
-            background-color: #000;
-            display: flex;
-            justify-content: center;
-            align-items: center;
+        body, html { 
+            margin: 0; padding: 0; height: 100%; width: 100%; 
+            overflow: hidden; background-color: var(--bg-black); 
             font-family: 'Courier New', Courier, monospace;
         }
 
-        /* 1. ATMOSPHERIC OVERLAY */
-        #blend-overlay {
-            position: absolute;
-            inset: 0;
-            background-image: url('BLEND.png');
-            background-size: cover;
-            background-position: center;
-            mix-blend-mode: screen;
-            z-index: 5;
-            pointer-events: none;
-            opacity: 0;
-            animation: lightningPulse 1.2s ease-out forwards;
-        }
-
-        /* 2. TACTICAL MARKER (SULU START POINT) */
-        #tactical-marker {
-            position: absolute;
-            z-index: 10;
-            width: 60px;
-            height: 60px;
-            background-image: url('PIN LOGO.png');
-            background-size: contain;
-            background-repeat: no-repeat;
-            background-position: center;
-            filter: drop-shadow(0 0 15px var(--accent-green));
-            opacity: 0;
-            /* Positioning relative to Sulu in a typical ZAMPEN map layout */
-            bottom: 20%; 
-            left: 20%;
-            animation: suluLock 1.5s cubic-bezier(0.19, 1, 0.22, 1) forwards;
-        }
-
-        /* 3. MAP CONTAINER (ZOOMING FROM SULU TO ZAMPEN) */
-        .map-frame-container {
-            position: relative;
-            width: 100%;
-            height: 100%;
+        /* 1. The Real-Time Map Layer */
+        #map {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             z-index: 1;
-            /* Origin set to bottom-left to simulate starting at Sulu */
-            transform-origin: 20% 80%; 
-            transform: scale(12);
-            filter: brightness(0) blur(10px);
-            animation: regionalZoomOut 4s cubic-bezier(0.16, 1, 0.3, 1) 0.5s forwards;
+            /* Tactical Filter: High contrast, slightly blue-tinted satellite view */
+            filter: brightness(0.6) contrast(1.4) saturate(0.8) hue-rotate(190deg);
         }
 
-        iframe {
-            width: 100%;
-            height: 100%;
-            border: none;
-            background: #020b16;
+        /* 2. HUD Overlay (Static UI) */
+        #hud-layer {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 10; pointer-events: none;
+            border: 2px solid rgba(0, 212, 255, 0.2);
+            box-sizing: border-box;
         }
 
-        /* 4. HUD ELEMENTS */
-        .hud-scanline {
-            position: absolute;
-            width: 100%;
-            height: 2px;
-            background: rgba(0, 212, 255, 0.3);
-            z-index: 6;
-            top: 0;
-            box-shadow: 0 0 10px var(--tactical-blue);
-            animation: scanning 4s linear infinite;
+        /* Scanning Line Animation */
+        .scan-bar {
+            position: absolute; width: 100%; height: 4px;
+            background: rgba(0, 255, 102, 0.3);
+            box-shadow: 0 0 15px var(--defense-green);
+            top: -10px;
+            animation: scanLine 6s linear infinite;
         }
 
-        /* ANIMATION SEQUENCES */
+        /* UI Telemetry Boxes */
+        .ui-box {
+            position: absolute; background: rgba(0, 10, 15, 0.8);
+            border-left: 3px solid var(--tactical-blue);
+            padding: 15px; color: var(--tactical-blue); font-size: 11px;
+            text-transform: uppercase; letter-spacing: 1px;
+        }
+        #top-left { top: 30px; left: 30px; }
+        #bottom-right { bottom: 30px; right: 30px; text-align: right; border-left: 0; border-right: 3px solid var(--alert-red); color: var(--alert-red); }
 
-        @keyframes lightningPulse {
-            0% { opacity: 0; background-color: #fff; }
-            10% { opacity: 1; background-color: transparent; }
-            20% { opacity: 0.2; }
-            30% { opacity: 0.6; }
-            100% { opacity: 0.3; }
+        /* Tactical Marker (The "Target") */
+        .target-reticle {
+            position: absolute; top: 50%; left: 50%;
+            width: 100px; height: 100px;
+            transform: translate(-50%, -50%);
+            border: 1px solid var(--defense-green);
+            border-radius: 50%;
+            animation: pulse 2s infinite;
         }
 
-        @keyframes suluLock {
-            0% { opacity: 0; transform: scale(5); }
-            40% { opacity: 1; transform: scale(1); }
-            80% { opacity: 1; transform: scale(1.1); }
-            100% { opacity: 0; transform: scale(0.2); }
-        }
+        @keyframes scanLine { 0% { top: 0%; } 100% { top: 100%; } }
+        @keyframes pulse { 0% { transform: translate(-50%, -50%) scale(0.8); opacity: 0.5; } 100% { transform: translate(-50%, -50%) scale(1.2); opacity: 0; } }
 
-        @keyframes regionalZoomOut {
-            0% {
-                transform: scale(12);
-                filter: brightness(0.1) blur(15px);
-            }
-            20% {
-                filter: brightness(0.4) blur(8px);
-            }
-            100% {
-                transform: scale(1);
-                filter: brightness(1) blur(0px);
-            }
-        }
-
-        @keyframes scanning {
-            0% { top: 0%; }
-            100% { top: 100%; }
-        }
-
-        /* COORDINATE BOX */
-        .coords {
-            position: absolute;
-            bottom: 20px;
-            right: 20px;
-            z-index: 10;
-            color: var(--accent-green);
-            font-size: 12px;
-            background: rgba(0,0,0,0.5);
-            padding: 5px;
-            border-left: 2px solid var(--accent-green);
-            pointer-events: none;
+        /* Secure Frame Transition */
+        #secure-frame {
+            position: absolute; width: 100%; height: 100%; border: none;
+            z-index: 100; opacity: 0; display: none;
+            transition: opacity 1s ease-in;
         }
     </style>
 </head>
 <body>
 
-    <div class="hud-scanline"></div>
-    <div id="blend-overlay"></div>
-    <div id="tactical-marker"></div>
-    
-    <div class="coords">
-        UPLINK: ACTIVE<br>
-        SECTOR: RPRMD-PRO9<br>
-        LOC: 6.0483° N, 121.0024° E
+    <!-- Native Map Canvas -->
+    <div id="map"></div>
+
+    <!-- Drone HUD -->
+    <div id="hud-layer">
+        <div class="scan-bar"></div>
+        <div class="target-reticle"></div>
+        
+        <div id="top-left" class="ui-box">
+            [AOR] ZAMBOANGA PENINSULA (PRO9)<br>
+            [UNIT] SAT-DRONE RECON 01<br>
+            [STATUS] <span id="status-text">INITIALIZING...</span>
+        </div>
+
+        <div id="bottom-right" class="ui-box">
+            LAT: <span id="lat">6.92</span><br>
+            LNG: <span id="lng">122.07</span><br>
+            ALT: <span id="alt">1500</span>m<br>
+            ENCRYPTION: AES-256 ACTIVE
+        </div>
     </div>
 
-    <div class="map-frame-container">
-        <iframe 
+    <!-- Data Input Iframe (Your Google Script) -->
+    <iframe id="secure-frame" 
             src="https://script.google.com/macros/s/AKfycbzvJifcj_nQkvV7mzky_ounblj4_eIFZtLtoeT-xCGXNEOhyuTfokJWmu4aFtCl5lel/exec"
-            title="PRO9 Tactical System"
-            allow="autoplay; geolocation">
-        </iframe>
-    </div>
+            onload="startTacticalSequence()">
+    </iframe>
 
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <script>
+        // 1. Initialize Map at Sulu/Zamboanga Start Point
+        const map = L.map('map', { 
+            zoomControl: false, 
+            attributionControl: false 
+        }).setView([6.0, 121.0], 15); // Starting deep in Sulu
+
+        // 2. Load Satellite Imagery (Esri World Imagery)
+        L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}').addTo(map);
+
+        function startTacticalSequence() {
+            const status = document.getElementById('status-text');
+            const frame = document.getElementById('secure-frame');
+
+            // Step 1: Update Telemetry
+            setTimeout(() => {
+                status.innerText = "TARGET ACQUIRED - SULU/ZAMPEN";
+                status.style.color = "var(--defense-green)";
+                
+                // Step 2: Dynamic Zoom Out (Ascending from Sulu to full ZAMPEN view)
+                map.flyTo([7.5, 122.5], 8, {
+                    animate: true,
+                    duration: 4.5
+                });
+            }, 1000);
+
+            // Step 3: Transition to Google Script Form
+            setTimeout(() => {
+                frame.style.display = "block";
+                frame.style.opacity = "1";
+                status.innerText = "UPLINK ESTABLISHED";
+            }, 5500);
+        }
+
+        // Simulating Live GPS Jitter
+        setInterval(() => {
+            document.getElementById('lat').innerText = (7.5 + Math.random() * 0.01).toFixed(4);
+            document.getElementById('lng').innerText = (122.5 + Math.random() * 0.01).toFixed(4);
+            document.getElementById('alt').innerText = Math.floor(12000 + Math.random() * 100);
+        }, 100);
+    </script>
 </body>
 </html>
