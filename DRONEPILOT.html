@@ -171,7 +171,7 @@
 
     <header id="tactical-header">
         <img src="PIN LOGO.png" id="header-logo" alt="PRO9">
-        <div id="header-title">DRONE_PILOT | MISSION CONTROL</div>
+        <div id="header-title">DRONE_PILOT | CONSOLE</div>
     </header>
 
     <button id="folder-toggle-btn" onclick="toggleFolder()">[ RECEIPT: VISIBLE ]</button>
@@ -193,6 +193,10 @@
         <div class="viewport-grid" id="main-grid">
             <div class="pane" id="input-pane">
                 <div class="pane-header">
+                    <header id="tactical-header">
+                        <img src="PIN LOGO.png" id="header-logo" alt="PRO9">
+                        <div id="header-title">DRONE_PILOT | CONSOLE</div>
+                    </header>
                     <span>> ORDER_DATA_INPUT</span>
                     <span style="color: var(--accent-green);">ONLINE</span>
                 </div>
@@ -201,7 +205,7 @@
 
             <div class="pane" id="folder-pane">
                 <div class="pane-header">
-                    <span>> CLOUD_ARCHIVE_SULU <span class="sync-indicator" id="sync-icon">● LIVE_SYNC</span></span>
+                    <span>> CLOUD_ARCHIVE_FILE <span class="sync-indicator" id="sync-icon">● LIVE_SYNC</span></span>
                     <button class="view-toggle-btn" onclick="toggleView()">TOGGLE_VIEWMODE</button>
                 </div>
                 <iframe id="folder-frame" src="about:blank"></iframe>
