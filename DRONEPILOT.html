@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>PRO9 | DRONEPILOT</title>
+    <title>PRO9 | DRONEPILOT COMMAND</title>
     
     <link rel="icon" type="image/png" href="PIN LOGO.png">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -14,7 +14,7 @@
             --accent-green: #00ff66;
             --bg-black: #00050a;
             --warning-red: rgba(255, 51, 51, 0.8);
-            --glass: rgba(0, 20, 40, 0.85);
+            --glass: rgba(0, 20, 40, 0.7);
             --ui-glow: 0 0 15px rgba(0, 212, 255, 0.4);
         }
 
@@ -25,20 +25,18 @@
             color: var(--accent-green);
         }
 
-        /* SCANLINE / CRT EFFECT */
+        /* SCANLINE CRT EFFECT */
         body::before {
             content: "";
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), 
                         linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.03));
             background-size: 100% 3px, 3px 100%;
-            pointer-events: none; z-index: 3000; opacity: 0.4;
+            pointer-events: none; z-index: 3000; opacity: 0.3;
         }
 
-        /* COMMAND HEADER */
         #tactical-header {
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 60px;
+            position: absolute; top: 0; left: 0; width: 100%; height: 60px;
             background: linear-gradient(to bottom, var(--bg-black), transparent);
             border-bottom: 1px solid rgba(0, 212, 255, 0.3);
             display: flex; align-items: center; padding: 0 30px;
@@ -48,7 +46,6 @@
         #header-logo { height: 38px; margin-right: 15px; filter: drop-shadow(0 0 8px var(--tactical-blue)); }
         #header-title { font-weight: bold; letter-spacing: 4px; font-size: 14px; color: #fff; text-shadow: 0 0 10px var(--tactical-blue); }
 
-        /* ALERT OVERLAY */
         #siren-overlay {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             z-index: 400; pointer-events: none; opacity: 0;
@@ -61,12 +58,10 @@
 
         #map {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            z-index: 1;
-            filter: brightness(0.5) contrast(1.2) saturate(0.2) hue-rotate(170deg);
+            z-index: 1; filter: brightness(0.5) contrast(1.2) saturate(0.2) hue-rotate(170deg);
             transition: filter 3s ease-in-out;
         }
 
-        /* RETICLE */
         #reticle {
             position: absolute; top: 50%; left: 50%;
             transform: translate(-50%, -50%);
@@ -79,37 +74,13 @@
         #reticle::before { content: ""; position: absolute; width: 140%; height: 1px; top: 50%; left: -20%; background: linear-gradient(90deg, transparent, var(--accent-green), transparent); }
         #reticle::after { content: ""; position: absolute; width: 1px; height: 140%; left: 50%; top: -20%; background: linear-gradient(180deg, transparent, var(--accent-green), transparent); }
 
-        /* HUD DATA */
         #hud-data {
-            position: absolute; bottom: 40px; right: 40px; z-index: 1100;
-            font-size: 12px; text-align: right;
-            line-height: 1.8; pointer-events: none;
-            text-shadow: 0 0 5px var(--accent-green);
+            position: absolute; bottom: 20px; right: 20px; z-index: 2500;
+            font-size: 11px; text-align: right; line-height: 1.6;
+            pointer-events: none; text-shadow: 0 0 5px var(--accent-green);
         }
 
-        /* FLOATING ACCESS BUTTON */
-        #folder-access-btn {
-            position: absolute; bottom: 40px; left: 40px; z-index: 1300;
-            padding: 12px 24px;
-            background: rgba(0, 212, 255, 0.15);
-            border: 1px solid var(--tactical-blue);
-            color: var(--tactical-blue);
-            font-family: 'Courier New', monospace;
-            font-weight: bold; cursor: pointer;
-            letter-spacing: 2px; transition: all 0.3s ease;
-            box-shadow: var(--ui-glow);
-            display: none;
-            backdrop-filter: blur(5px);
-        }
-        #folder-access-btn:hover {
-            background: var(--tactical-blue);
-            color: var(--bg-black);
-            box-shadow: 0 0 30px var(--tactical-blue);
-            transform: scale(1.05);
-        }
-
-        /* UPLINK / FORM INTERFACE */
-        #form-container {
+        #command-interface {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             z-index: 1200; display: none; opacity: 0;
             background-color: var(--bg-black);
@@ -118,69 +89,48 @@
 
         #logo-blend-bg {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            object-fit: cover; z-index: 1; opacity: 0.35;
+            object-fit: cover; z-index: 1; opacity: 0.2;
             mix-blend-mode: screen; pointer-events: none;
             animation: pulseBackground 8s infinite alternate ease-in-out;
         }
 
-        .branding-content {
-            position: relative; z-index: 10;
-            display: flex; flex-direction: column; align-items: center;
-            padding-top: 80px;
+        .viewport-grid {
+            position: absolute; top: 80px; left: 2%; width: 96%; height: 85%;
+            display: grid; grid-template-columns: 1fr 1fr; gap: 20px; z-index: 10;
         }
 
-        #form-branding-logo {
-            height: 80px; filter: drop-shadow(0 0 20px var(--tactical-blue));
-            animation: logoFloat 4s infinite alternate ease-in-out;
-            margin-bottom: 15px;
+        .pane {
+            display: flex; flex-direction: column;
+            border: 1px solid rgba(0, 212, 255, 0.3);
+            background: var(--glass); border-radius: 4px; overflow: hidden;
         }
 
-        #target-frame {
-            position: absolute; bottom: 5%; left: 50%; transform: translateX(-50%);
-            width: 90%; height: 60%; 
-            border: 1px solid rgba(0, 212, 255, 0.4); 
-            background: var(--glass);
-            box-shadow: 0 0 50px rgba(0, 0, 0, 0.9);
-            z-index: 20; border-radius: 4px;
-            backdrop-filter: blur(15px);
+        .pane-header {
+            background: rgba(0, 212, 255, 0.1); padding: 8px 15px;
+            font-size: 10px; letter-spacing: 2px; color: var(--tactical-blue);
+            border-bottom: 1px solid rgba(0, 212, 255, 0.3);
+            display: flex; justify-content: space-between;
         }
 
-        /* DRIVE OVERLAY */
-        #drive-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0, 5, 10, 0.98);
-            z-index: 4000; display: none; flex-direction: column;
-            backdrop-filter: blur(15px);
-        }
-        #drive-header {
-            height: 60px; display: flex; justify-content: space-between; align-items: center;
-            padding: 0 30px; border-bottom: 1px solid var(--tactical-blue);
-            background: rgba(0, 212, 255, 0.05);
-        }
-        #close-drive {
-            color: var(--warning-red); cursor: pointer; font-weight: bold;
-            border: 1px solid var(--warning-red); padding: 8px 18px;
-            transition: all 0.3s;
-        }
-        #close-drive:hover { background: var(--warning-red); color: white; }
-        #drive-frame { flex-grow: 1; width: 100%; border: none; }
+        iframe { width: 100%; height: 100%; border: none; background: transparent; }
 
-        /* UTILS */
+        @media (max-width: 800px) {
+            .viewport-grid { grid-template-columns: 1fr; grid-template-rows: 1fr 1fr; top: 70px; height: 88%; }
+        }
+
         .tactical-label {
             background: rgba(0, 10, 20, 0.9) !important; border: 1px solid var(--tactical-blue) !important;
             color: var(--tactical-blue) !important; font-family: monospace !important;
-            box-shadow: 0 0 10px rgba(0, 212, 255, 0.3);
         }
 
-        @keyframes pulseBackground { from { transform: scale(1); opacity: 0.2; } to { transform: scale(1.05); opacity: 0.4; } }
-        @keyframes logoFloat { from { transform: translateY(0); } to { transform: translateY(-10px); } }
+        @keyframes pulseBackground { from { transform: scale(1); opacity: 0.15; } to { transform: scale(1.05); opacity: 0.3; } }
     </style>
 </head>
 <body oncontextmenu="return false;">
 
     <header id="tactical-header">
         <img src="PIN LOGO.png" id="header-logo" alt="PRO9">
-        <div id="header-title">DRONE_PILOT | REGIONAL OPS CENTER</div>
+        <div id="header-title">DRONE_PILOT | MISSION CONTROL</div>
     </header>
 
     <div id="siren-overlay"></div>
@@ -188,42 +138,43 @@
     <div id="reticle"></div>
     
     <div id="hud-data">
-        <span style="color:rgba(0,255,102,0.5)">// SATELLITE_LINK_v3.4 //</span><br>
-        NET_TYPE: <span style="color:#fff">ENCRYPTED_UPLINK</span><br>
-        STATUS: <span id="status-text" style="color:#fff">INITIALIZING...</span><br>
+        <span style="color:rgba(0,255,102,0.5)">// SATELLITE_UPLINK_v4.0 //</span><br>
+        STATUS: <span id="status-text" style="color:#fff">BOOTING...</span><br>
         TARGET: <span id="current-coord" style="color:#fff">---</span><br>
         ALARM: <span id="alert-status" style="color:#fff">IDLE</span>
     </div>
 
-    <!-- Data Interface (Uplink Screen) -->
-    <div id="form-container">
+    <div id="command-interface">
         <img src="BLEND.png" id="logo-blend-bg" alt="Background">
-        <div class="branding-content">
-            <img src="PIN LOGO.png" id="form-branding-logo" alt="PRO9 LOGO">
-            <div style="letter-spacing: 5px; font-size: 11px; opacity: 0.8; color: var(--tactical-blue);">
-                SECURE_PROTOCOL // GOA_B_PIN_REQUEST
+        
+        <div class="viewport-grid">
+            <div class="pane">
+                <div class="pane-header">
+                    <span>> SECURE_DATA_INPUT</span>
+                    <span style="color: var(--accent-green);">ONLINE</span>
+                </div>
+                <iframe id="order-frame" src="about:blank"></iframe>
+            </div>
+
+            <div class="pane">
+                <div class="pane-header">
+                    <span>> CLOUD_ARCHIVE_SULU</span>
+                    <span style="color: var(--accent-green);">SYNCED</span>
+                </div>
+                <iframe id="folder-frame" src="about:blank"></iframe>
             </div>
         </div>
-        <iframe id="target-frame" src="about:blank"></iframe>
-    </div>
-
-    <!-- Floating UI Button -->
-    <button id="folder-access-btn" onclick="toggleDrive(true)">[ ACCESS_FILES ]</button>
-
-    <!-- File Explorer Overlay -->
-    <div id="drive-overlay">
-        <div id="drive-header">
-            <span style="letter-spacing: 3px;">DATABASE // CLOUD_ARCHIVE_SULU</span>
-            <div id="close-drive" onclick="toggleDrive(false)">TERMINATE_SESSION [X]</div>
-        </div>
-        <iframe id="drive-frame" src="about:blank"></iframe>
     </div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
     <script>
-        const GOOGLE_UPLINK = "https://script.google.com/macros/s/AKfycbyrbFRkTUh0mrtPZ0IYpqgNk3kwE3QRSet5eb7PF8aDHbZk_7ttjkizi2p2BMBLETDz/exec";
-        const DRIVE_FOLDER = "https://drive.google.com/drive/folders/101-9iC3lCeXIuJ3ukWtW9Gxq5bdl0qKT";
+        // CONFIGURATION
+        const GOOGLE_UPLINK = "https://script.google.com/macros/s/AKfycbx0IUHNG3c4wIKqiluVJ_bDa9XMQ5UaAA7jYLaMQgfezWnZ6E4AbDrmGgumqd238zHN/exec";
+        
+        // FIXED: Using the embeddedfolderview format to prevent the 403 error seen in image_e799f2.png
+        const DRIVE_FOLDER_ID = "101-9iC3lCeXIuJ3ukWtW9Gxq5bdl0qKT";
+        const DRIVE_EMBED_URL = `https://drive.google.com/embeddedfolderview?id=${DRIVE_FOLDER_ID}#list`;
 
         const pinIcon = L.icon({
             iconUrl: 'PIN LOGO.png',
@@ -248,19 +199,14 @@
 
         L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}').addTo(map);
 
-        // UI Element Selectors
         const statusText = document.getElementById('status-text');
         const hudCoord = document.getElementById('current-coord');
         const alertStatus = document.getElementById('alert-status');
         const siren = document.getElementById('siren-overlay');
         const reticle = document.getElementById('reticle');
-        const folderBtn = document.getElementById('folder-access-btn');
-        const driveOverlay = document.getElementById('drive-overlay');
-        const driveFrame = document.getElementById('drive-frame');
 
-        // Sequence Controller
         async function runTacticalSequence() {
-            await new Promise(r => setTimeout(r, 1500));
+            await new Promise(r => setTimeout(r, 1000));
             
             reticle.style.opacity = "1";
             siren.classList.add('siren-active'); 
@@ -270,50 +216,36 @@
             for (const point of scanPoints) {
                 statusText.innerText = `SCANNING_${point.n}`;
                 hudCoord.innerText = `${point.p[0].toFixed(4)}N / ${point.p[1].toFixed(4)}E`;
-                
-                map.flyTo(point.p, point.z, { duration: 1.5, easeLinearity: 0.1 });
-                
+                map.flyTo(point.p, point.z, { duration: 1.2, easeLinearity: 0.1 });
                 L.marker(point.p, { icon: pinIcon }).addTo(map)
                     .bindTooltip(point.n, { permanent: true, direction: 'right', className: 'tactical-label' });
-
-                await new Promise(r => setTimeout(r, 2000));
+                await new Promise(r => setTimeout(r, 1800));
             }
 
             siren.classList.remove('siren-active'); 
-            establishUplink();
+            initializeCommandCenter();
         }
 
-        function establishUplink() {
-            const container = document.getElementById('form-container');
-            const frame = document.getElementById('target-frame');
+        function initializeCommandCenter() {
+            const commandUI = document.getElementById('command-interface');
+            const orderFrame = document.getElementById('order-frame');
+            const folderFrame = document.getElementById('folder-frame');
             
-            alertStatus.innerText = "STABLE";
+            alertStatus.innerText = "ACTIVE";
             alertStatus.style.color = "var(--accent-green)";
-            statusText.innerText = "UPLINK_READY";
+            statusText.innerText = "UPLINK_ESTABLISHED";
             
-            frame.src = GOOGLE_UPLINK;
-            folderBtn.style.display = "block"; // Reveal the folder access button
-
+            // Load both frames
+            orderFrame.src = GOOGLE_UPLINK;
+            folderFrame.src = DRIVE_EMBED_URL;
+            
             setTimeout(() => {
-                container.style.display = "block";
+                commandUI.style.display = "block";
                 setTimeout(() => {
-                    container.style.opacity = "1";
-                    document.getElementById('map').style.filter = "brightness(0.05) blur(15px)";
-                    statusText.innerText = "SYSTEM_ONLINE";
+                    commandUI.style.opacity = "1";
+                    document.getElementById('map').style.filter = "brightness(0.05) blur(25px)";
                 }, 100);
-            }, 1000);
-        }
-
-        function toggleDrive(show) {
-            if (show) {
-                driveFrame.src = DRIVE_FOLDER;
-                driveOverlay.style.display = "flex";
-                statusText.innerText = "BROWSING_ARCHIVES";
-            } else {
-                driveOverlay.style.display = "none";
-                driveFrame.src = "about:blank";
-                statusText.innerText = "SYSTEM_ONLINE";
-            }
+            }, 800);
         }
 
         window.onload = runTacticalSequence;
