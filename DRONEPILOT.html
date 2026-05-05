@@ -2,19 +2,18 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <link rel="icon" type="image/png" href="pro9 logo.png">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>PRO9 | TACTICAL DRONE FEED - ZAMPEN/SULU</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PRO9 | TACTICAL SATELLITE INTERFACE</title>
     
-    <!-- Leaflet Engine for Real Mapping -->
+    <!-- Leaflet Mapping Engine -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     
     <style>
         :root {
             --tactical-blue: #00d4ff;
             --defense-green: #00ff66;
-            --alert-red: #ff1744;
-            --bg-black: #000a0f;
+            --alert-gold: #ffcc00;
+            --bg-black: #00050a;
         }
 
         body, html { 
@@ -23,134 +22,137 @@
             font-family: 'Courier New', Courier, monospace;
         }
 
-        /* 1. The Real-Time Map Layer */
+        /* 1. Live Satellite Layer */
         #map {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             z-index: 1;
-            /* Tactical Filter: High contrast, slightly blue-tinted satellite view */
-            filter: brightness(0.6) contrast(1.4) saturate(0.8) hue-rotate(190deg);
+            filter: brightness(0.5) contrast(1.4) saturate(0.5) hue-rotate(180deg);
         }
 
-        /* 2. HUD Overlay (Static UI) */
-        #hud-layer {
+        /* 2. Tactical HUD Overlay */
+        #hud {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             z-index: 10; pointer-events: none;
-            border: 2px solid rgba(0, 212, 255, 0.2);
-            box-sizing: border-box;
+            background: radial-gradient(circle at center, transparent 40%, rgba(0, 10, 20, 0.6) 100%);
         }
 
-        /* Scanning Line Animation */
-        .scan-bar {
-            position: absolute; width: 100%; height: 4px;
-            background: rgba(0, 255, 102, 0.3);
-            box-shadow: 0 0 15px var(--defense-green);
-            top: -10px;
-            animation: scanLine 6s linear infinite;
+        /* Corner Brackets */
+        .corner {
+            position: absolute; width: 40px; height: 40px;
+            border: 2px solid var(--tactical-blue); opacity: 0.7;
+        }
+        .tl { top: 20px; left: 20px; border-right: 0; border-bottom: 0; }
+        .tr { top: 20px; right: 20px; border-left: 0; border-bottom: 0; }
+        .bl { bottom: 20px; left: 20px; border-right: 0; border-top: 0; }
+        .br { bottom: 20px; right: 20px; border-left: 0; border-top: 0; }
+
+        /* Telemetry Data */
+        .telemetry {
+            position: absolute; background: rgba(0, 20, 40, 0.8);
+            padding: 15px; border-left: 3px solid var(--defense-green);
+            font-size: 11px; color: var(--defense-green);
+            text-transform: uppercase; letter-spacing: 2px;
+        }
+        #sector-info { top: 60px; left: 40px; }
+        #gps-data { bottom: 60px; right: 40px; text-align: right; border-left: 0; border-right: 3px solid var(--alert-gold); color: var(--alert-gold); }
+
+        /* Scanning Line */
+        .scanner {
+            position: absolute; width: 100%; height: 2px;
+            background: var(--tactical-blue); opacity: 0.3;
+            box-shadow: 0 0 15px var(--tactical-blue);
+            animation: scan 4s linear infinite;
         }
 
-        /* UI Telemetry Boxes */
-        .ui-box {
-            position: absolute; background: rgba(0, 10, 15, 0.8);
-            border-left: 3px solid var(--tactical-blue);
-            padding: 15px; color: var(--tactical-blue); font-size: 11px;
-            text-transform: uppercase; letter-spacing: 1px;
-        }
-        #top-left { top: 30px; left: 30px; }
-        #bottom-right { bottom: 30px; right: 30px; text-align: right; border-left: 0; border-right: 3px solid var(--alert-red); color: var(--alert-red); }
+        @keyframes scan { 0% { top: 0%; } 100% { top: 100%; } }
 
-        /* Tactical Marker (The "Target") */
-        .target-reticle {
-            position: absolute; top: 50%; left: 50%;
-            width: 100px; height: 100px;
-            transform: translate(-50%, -50%);
-            border: 1px solid var(--defense-green);
-            border-radius: 50%;
-            animation: pulse 2s infinite;
-        }
-
-        @keyframes scanLine { 0% { top: 0%; } 100% { top: 100%; } }
-        @keyframes pulse { 0% { transform: translate(-50%, -50%) scale(0.8); opacity: 0.5; } 100% { transform: translate(-50%, -50%) scale(1.2); opacity: 0; } }
-
-        /* Secure Frame Transition */
+        /* Secure Data Form (Iframe) */
         #secure-frame {
             position: absolute; width: 100%; height: 100%; border: none;
             z-index: 100; opacity: 0; display: none;
-            transition: opacity 1s ease-in;
+            transition: opacity 1.5s ease-in-out;
         }
+
+        /* Center Target */
+        .target-reticle {
+            position: absolute; top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            width: 100px; height: 100px;
+            border: 1px solid var(--defense-green);
+            border-radius: 50%;
+            opacity: 0.5;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse { 0% { transform: translate(-50%, -50%) scale(1); } 50% { transform: translate(-50%, -50%) scale(1.2); opacity: 0.8; } 100% { transform: translate(-50%, -50%) scale(1); } }
     </style>
 </head>
 <body>
 
-    <!-- Native Map Canvas -->
     <div id="map"></div>
 
-    <!-- Drone HUD -->
-    <div id="hud-layer">
-        <div class="scan-bar"></div>
+    <div id="hud">
+        <div class="scanner"></div>
+        <div class="corner tl"></div><div class="corner tr"></div>
+        <div class="corner bl"></div><div class="corner br"></div>
         <div class="target-reticle"></div>
-        
-        <div id="top-left" class="ui-box">
-            [AOR] ZAMBOANGA PENINSULA (PRO9)<br>
-            [UNIT] SAT-DRONE RECON 01<br>
-            [STATUS] <span id="status-text">INITIALIZING...</span>
+
+        <div id="sector-info" class="telemetry">
+            [SYS] SATELLITE LINK: PRO9<br>
+            [LOC] SECTOR: SULU / ZAMPEN<br>
+            [NET] ENCRYPTED FEED_
         </div>
 
-        <div id="bottom-right" class="ui-box">
-            LAT: <span id="lat">6.92</span><br>
-            LNG: <span id="lng">122.07</span><br>
-            ALT: <span id="alt">1500</span>m<br>
-            ENCRYPTION: AES-256 ACTIVE
+        <div id="gps-data" class="telemetry">
+            LAT: <span id="lat">0.000</span><br>
+            LNG: <span id="lng">0.000</span><br>
+            [STATUS]: RECON IN PROGRESS
         </div>
     </div>
 
-    <!-- Data Input Iframe (Your Google Script) -->
+    <!-- Your Google Script Form -->
     <iframe id="secure-frame" 
             src="https://script.google.com/macros/s/AKfycbzvJifcj_nQkvV7mzky_ounblj4_eIFZtLtoeT-xCGXNEOhyuTfokJWmu4aFtCl5lel/exec"
-            onload="startTacticalSequence()">
+            onload="triggerSequence()">
     </iframe>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
     <script>
-        // 1. Initialize Map at Sulu/Zamboanga Start Point
-        const map = L.map('map', { 
-            zoomControl: false, 
-            attributionControl: false 
-        }).setView([6.0, 121.0], 15); // Starting deep in Sulu
+        // Initialize Map focusing on Sulu Archipeligo initially
+        const map = L.map('map', { zoomControl: false, attributionControl: false }).setView([6.05, 121.0], 14);
 
-        // 2. Load Satellite Imagery (Esri World Imagery)
+        // Professional Satellite Imagery
         L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}').addTo(map);
 
-        function startTacticalSequence() {
-            const status = document.getElementById('status-text');
+        function triggerSequence() {
             const frame = document.getElementById('secure-frame');
-
-            // Step 1: Update Telemetry
+            
+            // 1. Zoom Out Animation (Sulu to ZAMPEN Overview)
             setTimeout(() => {
-                status.innerText = "TARGET ACQUIRED - SULU/ZAMPEN";
-                status.style.color = "var(--defense-green)";
-                
-                // Step 2: Dynamic Zoom Out (Ascending from Sulu to full ZAMPEN view)
-                map.flyTo([7.5, 122.5], 8, {
+                map.flyTo([7.8, 123.0], 8, {
                     animate: true,
-                    duration: 4.5
+                    duration: 5.0
                 });
             }, 1000);
 
-            // Step 3: Transition to Google Script Form
+            // 2. Telemetry Update Simulation
+            let latDisp = document.getElementById('lat');
+            let lngDisp = document.getElementById('lng');
+            setInterval(() => {
+                latDisp.innerText = (map.getCenter().lat + (Math.random() * 0.01)).toFixed(4);
+                lngDisp.innerText = (map.getCenter().lng + (Math.random() * 0.01)).toFixed(4);
+            }, 150);
+
+            // 3. Handover to Google Script Form
             setTimeout(() => {
                 frame.style.display = "block";
-                frame.style.opacity = "1";
-                status.innerText = "UPLINK ESTABLISHED";
-            }, 5500);
+                setTimeout(() => {
+                    frame.style.opacity = "1";
+                    document.getElementById('hud').style.opacity = "0";
+                }, 100);
+            }, 6000);
         }
-
-        // Simulating Live GPS Jitter
-        setInterval(() => {
-            document.getElementById('lat').innerText = (7.5 + Math.random() * 0.01).toFixed(4);
-            document.getElementById('lng').innerText = (122.5 + Math.random() * 0.01).toFixed(4);
-            document.getElementById('alt').innerText = Math.floor(12000 + Math.random() * 100);
-        }, 100);
     </script>
 </body>
 </html>
