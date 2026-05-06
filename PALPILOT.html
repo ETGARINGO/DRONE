@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PRO9 | DRONE PRESENTATION</title>
+
+<style>
+:root{
+    --blue:#00d4ff;
+    --green:#00ff88;
+    --bg:#02060c;
+}
+
+/* RESET */
+*{margin:0;padding:0;box-sizing:border-box;}
+
+body{
+    background:#000;
+    overflow:hidden;
+    font-family:monospace;
+    color:var(--green);
+}
+
+/* VIDEO */
+#video{
+    position:fixed;
+    width:100%;
+    height:100%;
+    object-fit:cover;
+    filter:brightness(.6) contrast(1.2) saturate(.8);
+}
+
+/* OVERLAY */
+#overlay{
+    position:absolute;
+    width:100%;
+    height:100%;
+    pointer-events:none;
+}
+
+/* SCANLINES */
+#overlay::before{
+    content:"";
+    position:absolute;
+    width:100%;
+    height:100%;
+    background:linear-gradient(rgba(0,0,0,0) 50%, rgba(0,0,0,.25) 50%);
+    background-size:100% 3px;
+    opacity:.3;
+}
+
+/* HEADER */
+header{
+    position:absolute;
+    top:0;
+    width:100%;
+    padding:15px;
+    display:flex;
+    align-items:center;
+    z-index:10;
+}
+
+header img{height:35px;margin-right:10px;}
+header span{letter-spacing:3px;color:#fff;}
+
+/* RETICLE */
+#reticle{
+    position:absolute;
+    top:50%;
+    left:50%;
+    width:250px;
+    height:250px;
+    transform:translate(-50%,-50%);
+    border:1px solid rgba(0,255,136,.2);
+    border-radius:50%;
+}
+
+#reticle::before,
+#reticle::after{
+    content:"";
+    position:absolute;
+    background:var(--green);
+}
+
+#reticle::before{
+    width:140%;
+    height:1px;
+    top:50%;
+    left:-20%;
+}
+
+#reticle::after{
+    height:140%;
+    width:1px;
+    left:50%;
+    top:-20%;
+}
+
+/* HUD */
+#hud{
+    position:absolute;
+    bottom:20px;
+    right:20px;
+    text-align:right;
+    font-size:12px;
+}
+
+/* GLITCH */
+.glitch{
+    animation:glitch .3s;
+}
+@keyframes glitch{
+    0%{transform:translate(0)}
+    25%{transform:translate(-3px,2px)}
+    50%{transform:translate(3px,-2px)}
+    100%{transform:translate(0)}
+}
+
+/* FADE */
+.fade{
+    animation:fade 1s;
+}
+@keyframes fade{
+    from{opacity:0}
+    to{opacity:1}
+}
+</style>
+</head>
+
+<body>
+
+<video id="video" autoplay muted></video>
+
+<div id="overlay">
+    <header>
+        <img src="PIN LOGO.png">
+        <span>DRONE PRESENTATION SYSTEM</span>
+    </header>
+
+    <div id="reticle"></div>
+
+    <div id="hud">
+        STATUS: <span id="status">INITIALIZING</span><br>
+        VIDEO: <span id="videoName">---</span><br>
+        MODE: <span id="mode">AUTO</span>
+    </div>
+</div>
+
+<script>
+/* ================= PLAYLIST ================= */
+const playlist = [
+    {name:"MISSION INTRO", src:"video1.mp4"},
+    {name:"SURVEILLANCE FEED", src:"video2.mp4"},
+    {name:"TARGET LOCK", src:"video3.mp4"}
+];
+
+let current = 0;
+const video = document.getElementById("video");
+
+/* ================= LOAD VIDEO ================= */
+function loadVideo(index){
+    const item = playlist[index];
+
+    video.src = item.src;
+    document.getElementById("videoName").textContent = item.name;
+    document.getElementById("status").textContent = "PLAYING";
+
+    video.classList.add("fade");
+    setTimeout(()=>video.classList.remove("fade"),1000);
+}
+
+/* ================= AUTO PLAY ================= */
+video.addEventListener("ended",()=>{
+    nextVideo();
+});
+
+/* ================= CONTROLS ================= */
+function nextVideo(){
+    current = (current+1) % playlist.length;
+    glitchEffect();
+    loadVideo(current);
+}
+
+function prevVideo(){
+    current = (current-1+playlist.length) % playlist.length;
+    glitchEffect();
+    loadVideo(current);
+}
+
+/* ================= EFFECTS ================= */
+function glitchEffect(){
+    video.classList.add("glitch");
+    setTimeout(()=>video.classList.remove("glitch"),300);
+}
+
+/* ================= KEYBOARD CONTROL ================= */
+document.addEventListener("keydown",(e)=>{
+    if(e.key==="ArrowRight") nextVideo();
+    if(e.key==="ArrowLeft") prevVideo();
+    if(e.key===" ") video.paused ? video.play() : video.pause();
+});
+
+/* ================= INIT ================= */
+window.onload=()=>{
+    loadVideo(current);
+};
+</script>
+
+</body>
+</html>
