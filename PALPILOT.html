@@ -3,38 +3,291 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>PRO9 | DRONE PRESENTATION</title>
+<title>PRO9 | DRONE CINEMATIC SYSTEM</title>
+
+<link rel="icon" href="PIN LOGO.png">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 
 <style>
 :root{
     --blue:#00d4ff;
-    --green:#00ff88;
-    --bg:#02060c;
+    --green:#00ff66;
+    --bg:#00050a;
 }
 
-/* RESET */
 *{margin:0;padding:0;box-sizing:border-box;}
 
 body{
     background:#000;
-    overflow:hidden;
     font-family:monospace;
+    overflow:hidden;
     color:var(--green);
+}
+
+/* MAP */
+#map{
+    position:absolute;
+    width:100%;
+    height:100%;
+    filter:brightness(.5) contrast(1.2) saturate(.2) hue-rotate(170deg);
+    transition:2s ease;
 }
 
 /* VIDEO */
 #video{
-    position:fixed;
+    position:absolute;
     width:100%;
     height:100%;
     object-fit:cover;
-    filter:brightness(.6) contrast(1.2) saturate(.8);
+    opacity:0;
+    transition:2s ease;
 }
 
-/* OVERLAY */
-#overlay{
+/* BLEND */
+#blend{
     position:absolute;
     width:100%;
+    height:100%;
+    object-fit:cover;
+    opacity:.25;
+    mix-blend-mode:screen;
+    pointer-events:none;
+    animation:pulseBG 8s infinite alternate;
+}
+
+/* HEADER */
+header{
+    position:absolute;
+    top:0;
+    width:100%;
+    padding:15px;
+    display:flex;
+    align-items:center;
+    z-index:2000;
+}
+header img{height:35px;margin-right:10px;}
+header span{color:#fff;letter-spacing:3px;}
+
+/* HUD */
+#hud{
+    position:absolute;
+    bottom:20px;
+    right:20px;
+    text-align:right;
+    font-size:12px;
+    z-index:2000;
+}
+
+/* RETICLE */
+#reticle{
+    position:absolute;
+    top:50%;
+    left:50%;
+    width:260px;
+    height:260px;
+    transform:translate(-50%,-50%);
+    border:1px solid rgba(0,255,102,.2);
+    border-radius:50%;
+    opacity:0;
+    transition:1s;
+}
+#reticle::before,#reticle::after{
+    content:"";
+    position:absolute;
+    background:var(--green);
+}
+#reticle::before{width:140%;height:1px;top:50%;left:-20%;}
+#reticle::after{height:140%;width:1px;left:50%;top:-20%;}
+
+/* SCANLINES */
+body::before{
+    content:"";
+    position:absolute;
+    width:100%;
+    height:100%;
+    background:linear-gradient(rgba(0,0,0,0) 50%, rgba(0,0,0,.3) 50%);
+    background-size:100% 3px;
+    opacity:.3;
+    pointer-events:none;
+    z-index:3000;
+}
+
+/* TOOLTIP */
+.tactical-label{
+    background:rgba(0,5,10,.8)!important;
+    border:1px solid var(--green)!important;
+    color:var(--green)!important;
+    font-size:11px!important;
+    font-weight:bold!important;
+}
+
+/* ANIMATIONS */
+@keyframes pulseBG{
+    from{transform:scale(1);opacity:.15;}
+    to{transform:scale(1.05);opacity:.35;}
+}
+
+.glitch{animation:glitch .3s;}
+@keyframes glitch{
+    0%{transform:translate(0)}
+    25%{transform:translate(-3px,2px)}
+    50%{transform:translate(3px,-2px)}
+    100%{transform:translate(0)}
+}
+</style>
+</head>
+
+<body>
+
+<header>
+<img src="PIN LOGO.png">
+<span>DRONE CINEMATIC SYSTEM</span>
+</header>
+
+<div id="map"></div>
+<video id="video" muted playsinline></video>
+<img src="BLEND.png" id="blend">
+
+<div id="reticle"></div>
+
+<div id="hud">
+STATUS: <span id="status">BOOTING...</span><br>
+TARGET: <span id="coord">---</span><br>
+MODE: <span id="mode">INIT</span>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<script>
+/* ================= MAP ================= */
+const map = L.map('map',{
+    zoomControl:false,
+    dragging:false,
+    scrollWheelZoom:false
+}).setView([6.92,122.07],8);
+
+L.tileLayer(
+'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'
+).addTo(map);
+
+/* ================= DATA ================= */
+const scanPoints = [
+    {n:"SULU_ARCHIPELAGO", p:[6.0,121.0], z:10, d:1500},
+    {n:"ISABELA_SECTOR", p:[6.70,121.97], z:12, d:1500},
+    {n:"ZAMBOANGA_HQ", p:[6.92,122.07], z:14, d:1800},
+    {n:"SIBUGAY_DISTRICT", p:[7.78,122.58], z:11, d:1500},
+    {n:"ZN_PROVINCE", p:[8.15,123.00], z:10, d:1500},
+    {n:"ZS_PROVINCE", p:[7.90,123.40], z:10, d:1500},
+    {n:"ZAMPEN_FINAL_LOCK", p:[7.7,122.8], z:9, d:2500, final:true}
+];
+
+const videoSrc = "Vidshirt.mp4";
+
+/* ================= UI ================= */
+const status = document.getElementById("status");
+const coord = document.getElementById("coord");
+const mode = document.getElementById("mode");
+const video = document.getElementById("video");
+const reticle = document.getElementById("reticle");
+
+/* ================= SEQUENCE ================= */
+async function start(){
+
+    await delay(1000);
+    reticle.style.opacity = "1";
+    mode.textContent = "SCANNING";
+
+    for(const point of scanPoints){
+
+        status.textContent = "TRACKING " + point.n;
+        coord.textContent = `${point.p[0].toFixed(4)}, ${point.p[1].toFixed(4)}`;
+
+        map.flyTo(point.p, point.z, {duration:1.2});
+
+        const marker = L.marker(point.p).addTo(map);
+        marker.bindTooltip(point.n,{permanent:true,className:'tactical-label'}).openTooltip();
+
+        pulse(point.p);
+
+        if(point.final){
+            mode.textContent = "TARGET LOCK";
+            status.textContent = "LOCKED";
+            await delay(point.d);
+            lockEffect(point.p);
+            break;
+        }
+
+        await delay(point.d);
+    }
+
+    launchVideo();
+}
+
+/* ================= EFFECTS ================= */
+function pulse(latlng){
+    const c = L.circle(latlng,{
+        radius:50000,
+        color:'#00ff66',
+        fillOpacity:0
+    }).addTo(map);
+
+    setTimeout(()=>map.removeLayer(c),1000);
+}
+
+function lockEffect(latlng){
+    const c = L.circle(latlng,{
+        radius:80000,
+        color:'#ff3333',
+        fillOpacity:0
+    }).addTo(map);
+
+    setTimeout(()=>map.removeLayer(c),1500);
+}
+
+/* ================= VIDEO ================= */
+function launchVideo(){
+
+    mode.textContent = "CINEMATIC";
+    status.textContent = "LOADING VIDEO";
+
+    video.src = videoSrc;
+
+    video.onloadeddata = ()=>{
+        status.textContent = "PLAYING";
+
+        document.getElementById("map").style.filter = "blur(25px) brightness(.1)";
+        video.style.opacity = 1;
+
+        video.play().catch(()=>{});
+        glitch();
+    };
+
+    video.onerror = ()=>{
+        status.textContent = "VIDEO ERROR";
+    };
+}
+
+/* ================= UTIL ================= */
+function delay(ms){return new Promise(r=>setTimeout(r,ms));}
+
+function glitch(){
+    video.classList.add("glitch");
+    setTimeout(()=>video.classList.remove("glitch"),300);
+}
+
+/* ================= CONTROL ================= */
+document.addEventListener("keydown",e=>{
+    if(e.key===" "){
+        video.paused ? video.play() : video.pause();
+    }
+});
+
+/* INIT */
+window.onload = start;
+</script>
+
+</body>
+</html>    width:100%;
     height:100%;
     pointer-events:none;
 }
