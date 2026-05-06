@@ -3,240 +3,143 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>PRO9 | DRONEPILOT TACTICAL</title>
-    
-    <link rel="icon" type="image/png" href="PIN LOGO.png">
+    <title>PRO9 | TACTICAL_CORE</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    
     <style>
         :root {
-            --tactical-blue: #00d4ff;
-            --accent-green: #00ff66;
-            --bg-black: #00050a;
-            --warning-red: rgba(255, 51, 51, 0.8);
-            --glass: rgba(0, 20, 40, 0.6);
-            --ui-glow: 0 0 15px rgba(0, 212, 255, 0.4);
+            --neon-blue: #00d4ff;
+            --neon-green: #00ff66;
+            --hazard-red: #ff3333;
+            --bg-black: #00080a;
         }
 
         body, html { 
             margin: 0; padding: 0; height: 100%; width: 100%; 
-            overflow: hidden; background-color: var(--bg-black); 
-            font-family: 'Courier New', Courier, monospace;
-            color: var(--accent-green);
+            overflow: hidden; background-color: #000; 
+            font-family: 'Courier New', monospace;
+            color: var(--neon-green);
         }
 
-        /* SCANLINE CRT EFFECT */
-        body::before {
-            content: "";
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%);
-            background-size: 100% 3px;
-            pointer-events: none; z-index: 3000; opacity: 0.3;
-        }
-
-        #tactical-header {
-            position: absolute; top: 0; left: 0; width: 100%; height: 60px;
-            background: linear-gradient(to bottom, var(--bg-black), transparent);
-            border-bottom: 1px solid rgba(0, 212, 255, 0.3);
-            display: flex; align-items: center; padding: 0 30px;
-            z-index: 1100; box-sizing: border-box;
-            backdrop-filter: blur(5px);
-        }
-        #header-logo { height: 38px; margin-right: 15px; filter: drop-shadow(0 0 8px var(--tactical-blue)); }
-        #header-title { font-weight: bold; letter-spacing: 4px; font-size: 14px; color: #fff; text-shadow: 0 0 10px var(--tactical-blue); }
-
-        #folder-toggle-btn {
-            position: fixed; right: 20px; top: 80px; z-index: 2000;
-            background: rgba(0, 20, 40, 0.8);
-            border: 1px solid var(--tactical-blue);
-            color: var(--tactical-blue);
-            padding: 10px; cursor: pointer;
-            font-family: inherit; font-size: 10px; font-weight: bold;
-            box-shadow: var(--ui-glow); transition: all 0.3s ease;
+        /* TACTICAL GRID & CRT EFFECT */
+        body::after {
+            content: ""; position: fixed; inset: 0;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.2) 50%),
+                        radial-gradient(circle, transparent 20%, rgba(0,0,0,0.8) 100%);
+            background-size: 100% 4px, 100% 100%;
+            pointer-events: none; z-index: 1000;
         }
 
         #map {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            z-index: 1; filter: brightness(0.4) contrast(1.2) saturate(0) sepia(1) hue-rotate(170deg);
-            transition: filter 3s ease-in-out;
+            position: absolute; inset: 0; z-index: 1;
+            filter: brightness(0.2) contrast(1.5) saturate(0) sepia(1) hue-rotate(155deg);
+            transition: filter 2s ease;
         }
 
-        /* TACTICAL VIDEO OVERLAY */
-        #video-container {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            z-index: 5; opacity: 0; transition: opacity 2s ease;
-            pointer-events: none;
-        }
-        #tactical-video {
-            width: 100%; height: 100%; object-fit: cover;
-            mix-blend-mode: screen; /* THIS MAKES THE BLACK BG TRANSPARENT */
-            opacity: 0.6;
-        }
-
-        #reticle {
-            position: absolute; top: 50%; left: 50%;
-            transform: translate(-50%, -50%);
-            width: 250px; height: 250px;
-            border: 1px solid rgba(0, 255, 102, 0.2);
-            border-radius: 50%; z-index: 60;
-            pointer-events: none; opacity: 0;
-            transition: opacity 1s ease;
-        }
-        #reticle::before { content: ""; position: absolute; width: 140%; height: 1px; top: 50%; left: -20%; background: var(--accent-green); opacity: 0.3; }
-        #reticle::after { content: ""; position: absolute; width: 1px; height: 140%; left: 50%; top: -20%; background: var(--accent-green); opacity: 0.3; }
-
-        #hud-data {
-            position: absolute; bottom: 20px; right: 20px; z-index: 2500;
-            font-size: 11px; text-align: right; line-height: 1.6;
-            pointer-events: none; text-shadow: 0 0 5px var(--accent-green);
-        }
-
-        #command-interface {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            z-index: 1200; display: none; opacity: 0;
+        /* THE VIDEO HUD (TRANSPARENT) */
+        #video-hud {
+            position: absolute; inset: 0; z-index: 500;
+            opacity: 0; pointer-events: none;
             transition: opacity 2s ease-in-out;
         }
-
-        .viewport-grid {
-            position: absolute; top: 80px; left: 2%; width: 96%; height: 85%;
-            display: grid; grid-template-columns: 1fr 1fr;
-            gap: 20px; z-index: 10;
+        video {
+            width: 100%; height: 100%; object-fit: cover;
+            mix-blend-mode: screen; filter: brightness(1.2) contrast(1.1);
         }
 
-        .pane {
-            display: flex; flex-direction: column;
-            border: 1px solid rgba(0, 212, 255, 0.3);
-            background: var(--glass); border-radius: 4px; overflow: hidden;
-            backdrop-filter: blur(10px);
+        /* DATA OVERLAY */
+        .hud-element {
+            position: absolute; z-index: 1100; pointer-events: none;
+            text-transform: uppercase; font-size: 12px; font-weight: bold;
+            text-shadow: 0 0 10px var(--neon-blue);
         }
 
-        .pane-header {
-            background: rgba(0, 212, 255, 0.1); padding: 8px 15px;
-            font-size: 10px; letter-spacing: 2px; color: var(--tactical-blue);
-            border-bottom: 1px solid rgba(0, 212, 255, 0.3);
-            display: flex; justify-content: space-between;
+        header { top: 20px; left: 30px; border-left: 3px solid var(--neon-blue); padding-left: 15px; }
+        footer { bottom: 30px; right: 30px; text-align: right; border-right: 3px solid var(--neon-green); padding-right: 15px; }
+
+        #reticle {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            width: 200px; height: 200px; border: 1px solid rgba(0, 212, 255, 0.2);
+            border-radius: 50%; z-index: 600; opacity: 0; transition: 1s;
         }
+        #reticle::before { content: ""; position: absolute; width: 1px; height: 300px; left: 50%; top: -50px; background: rgba(0,255,102,0.2); }
+        #reticle::after { content: ""; position: absolute; height: 1px; width: 300px; top: 50%; left: -50px; background: rgba(0,255,102,0.2); }
 
-        iframe { width: 100%; height: 100%; border: none; background: transparent; }
-
-        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+        .blink { animation: pulse 0.8s infinite; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.2; } }
     </style>
 </head>
-<body oncontextmenu="return false;">
+<body>
 
-    <header id="tactical-header">
-        <img src="PIN LOGO.png" id="header-logo" alt="PRO9">
-        <div id="header-title">DRONE_PILOT | TACTICAL_CONSOLE</div>
-    </header>
+<div id="map"></div>
 
-    <button id="folder-toggle-btn" onclick="toggleFolder()">[ ARCHIVE: VISIBLE ]</button>
+<header class="hud-element">
+    <div style="font-size: 18px; letter-spacing: 4px;">PRO9 // INTERCEPT</div>
+    <div id="status-line" style="color: var(--neon-blue);">SATELLITE_LINK: ESTABLISHING...</div>
+</header>
 
-    <div id="map"></div>
-    
-    <!-- AUTO-PLAYING TRANSPARENT VIDEO -->
-    <div id="video-container">
-        <video id="tactical-video" autoplay muted loop playsinline>
-            <source src="Vidshirt.mp4" type="video/mp4">
-        </video>
-    </div>
+<div id="video-hud">
+    <video autoplay muted loop playsinline>
+        <source src="Vidshirt.mp4" type="video/mp4">
+    </video>
+</div>
 
-    <div id="reticle"></div>
-    
-    <div id="hud-data">
-        <span style="color:rgba(0,255,102,0.5)">// UPLINK_v5.0 //</span><br>
-        STATUS: <span id="status-text" style="color:#fff">BOOTING...</span><br>
-        TARGET: <span id="current-coord" style="color:#fff">---</span><br>
-        ALARM: <span id="alert-status" style="color:#fff">IDLE</span>
-    </div>
+<div id="reticle"></div>
 
-    <div id="command-interface">
-        <div class="viewport-grid" id="main-grid">
-            <div class="pane" id="input-pane">
-                <div class="pane-header">
-                    <span>> FEED_A: MISSION_DATA</span>
-                    <span style="color: var(--accent-green);">LIVE</span>
-                </div>
-                <!-- Add your data source URL here -->
-                <iframe id="order-frame" src="about:blank"></iframe>
-            </div>
+<footer class="hud-element">
+    <div class="blink" id="alert-tag">-- SCANNING SECTORS --</div>
+    <div id="coord-hud" style="color: #fff;">0.0000 / 0.0000</div>
+    <div style="font-size: 9px; opacity: 0.6;">TEMP: 32°C | BATT: 94% | V-SYNC: ON</div>
+</footer>
 
-            <div class="pane" id="folder-pane">
-                <div class="pane-header">
-                    <span>> FEED_B: CLOUD_ARCHIVE</span>
-                    <span style="color: var(--tactical-blue);">SYNC_ACTIVE</span>
-                </div>
-                <iframe id="folder-frame" src="about:blank"></iframe>
-            </div>
-        </div>
-    </div>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+    const scanPoints = [
+        {n: "SULU_ARCHIPELAGO", p: [6.0, 121.0], z: 10},
+        {n: "ISABELA_SECTOR", p: [6.70, 121.97], z: 12},
+        {n: "ZAMBOANGA_HQ", p: [6.92, 122.07], z: 14},
+        {n: "SIBUGAY_DISTRICT", p: [7.78, 122.58], z: 11},
+        {n: "ZN_PROVINCE", p: [8.15, 123.00], z: 10},
+        {n: "ZS_PROVINCE", p: [7.90, 123.40], z: 10},
+        {n: "ZAMPEN_FINAL_LOCK", p: [7.7, 122.8], z: 8}
+    ];
 
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    const map = L.map('map', { zoomControl:false, dragging:false, scrollWheelZoom:false }).setView(scanPoints[0].p, 8);
+    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}').addTo(map);
 
-    <script>
-        const scanPoints = [
-            {n: "ZAMBOANGA_HQ", p: [6.92, 122.07], z: 14},
-            {n: "ISABELA_SECTOR", p: [6.70, 121.97], z: 12},
-            {n: "SULU_ARCHIPELAGO", p: [6.0, 121.0], z: 10},
-            {n: "ZAMPEN_FINAL_LOCK", p: [7.7, 122.8], z: 9}
-        ];
-
-        const map = L.map('map', { 
-            zoomControl: false, attributionControl: false,
-            dragging: false, scrollWheelZoom: false
-        }).setView(scanPoints[0].p, 8);
-
-        L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}').addTo(map);
-
-        const statusText = document.getElementById('status-text');
-        const hudCoord = document.getElementById('current-coord');
-        const alertStatus = document.getElementById('alert-status');
+    async function startMission() {
+        const status = document.getElementById('status-line');
+        const coords = document.getElementById('coord-hud');
+        const alertTag = document.getElementById('alert-tag');
         const reticle = document.getElementById('reticle');
-        const videoCont = document.getElementById('video-container');
 
-        async function runTacticalSequence() {
-            await new Promise(r => setTimeout(r, 1000));
-            reticle.style.opacity = "1";
+        await new Promise(r => setTimeout(r, 1500));
+        reticle.style.opacity = "1";
+
+        for (const pt of scanPoints) {
+            status.innerText = `TARGET_ACQUIRED: ${pt.n}`;
+            coords.innerText = `${pt.p[0].toFixed(4)}N / ${pt.p[1].toFixed(4)}E`;
             
-            for (const point of scanPoints) {
-                statusText.innerText = `SCANNING_${point.n}`;
-                hudCoord.innerText = `${point.p[0].toFixed(4)}N / ${point.p[1].toFixed(4)}E`;
-                map.flyTo(point.p, point.z, { duration: 1.5 });
-                await new Promise(r => setTimeout(r, 2000));
+            map.flyTo(pt.p, pt.z, { duration: 1.5, easeLinearity: 0.1 });
+            
+            // Add a small tactical pulse circle on the map
+            L.circleMarker(pt.p, { radius: 10, color: '#00ff66', weight: 1, opacity: 0.5 }).addTo(map);
+
+            if(pt.n === "ZAMPEN_FINAL_LOCK") {
+                status.style.color = "#ff3333";
+                alertTag.innerText = "!! TERMINAL LOCK !!";
+                alertTag.style.color = "#ff3333";
             }
-            
-            initializeInterface();
+            await new Promise(r => setTimeout(r, 2200));
         }
 
-        function initializeInterface() {
-            const commandUI = document.getElementById('command-interface');
-            
-            alertStatus.innerText = "ENGAGED";
-            alertStatus.style.color = "var(--accent-green)";
-            statusText.innerText = "UPLINK_STABLE";
-            
-            // Activate Video and Command UI
-            videoCont.style.opacity = "1";
-            commandUI.style.display = "block";
-            
-            setTimeout(() => {
-                commandUI.style.opacity = "1";
-                document.getElementById('map').style.filter = "brightness(0.1) blur(15px) grayscale(1)";
-            }, 100);
-        }
+        // Deploy Holographic HUD
+        document.getElementById('video-hud').style.opacity = "1";
+        document.getElementById('map').style.filter = "brightness(0.05) blur(10px) grayscale(1)";
+        status.innerText = "STREAM_LIVE: ENCRYPTED";
+        status.style.color = "var(--neon-green)";
+    }
 
-        function toggleFolder() {
-            const folder = document.getElementById('folder-pane');
-            const btn = document.getElementById('folder-toggle-btn');
-            if (folder.style.display === "none") {
-                folder.style.display = "flex";
-                btn.innerText = "[ ARCHIVE: VISIBLE ]";
-            } else {
-                folder.style.display = "none";
-                btn.innerText = "[ ARCHIVE: HIDDEN ]";
-            }
-        }
-
-        window.onload = runTacticalSequence;
-    </script>
+    window.onload = startMission;
+</script>
 </body>
 </html>
