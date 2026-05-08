@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>SYS_RECOVERY // CMD_POWERSHELL_CONSOLE</title>
+    <style>
+        :root {
+            --cmd-green: #00ff41;
+            --low-green: rgba(0, 255, 65, 0.15);
+            --bg-black: #010101;
+            --alert-red: #ff3333;
+        }
+
+        body, html {
+            margin: 0; padding: 0;
+            width: 100vw; height: 100vh;
+            background-color: var(--bg-black);
+            font-family: 'Consolas', 'Lucida Console', monospace;
+            overflow: hidden;
+            color: var(--cmd-green);
+        }
+
+        /* --- THE CLIPPING MASK (Hides the white spreadsheet UI) --- */
+        .console-viewport {
+            position: absolute;
+            inset: 0;
+            overflow: hidden;
+            border: 2px solid #222;
+            z-index: 5;
+            background: #000;
+        }
+
+        iframe {
+            position: absolute;
+            /* Precise crop for the image provided: hides toolbar and row headers */
+            top: -121px; 
+            left: -48px;
+            width: calc(100% + 60px);
+            height: calc(100% + 155px); 
+            border: none;
+            /* Phosphor Terminal Filter */
+            filter: contrast(1.2) brightness(0.75) sepia(0.4) hue-rotate(90deg);
+            z-index: 1;
+            pointer-events: all;
+        }
+
+        /* --- CRT SCREEN OVERLAYS --- */
+        .crt-overlay {
+            position: fixed;
+            inset: 0;
+            background: linear-gradient(var(--low-green) 50%, transparent 50%);
+            background-size: 100% 4px;
+            z-index: 100;
+            pointer-events: none;
+            opacity: 0.2;
+            animation: flicker 0.15s infinite;
+        }
+
+        @keyframes flicker {
+            0% { opacity: 0.18; }
+            100% { opacity: 0.22; }
+        }
+
+        /* --- DYNAMIC HUD OVERLAYS --- */
+        .hud-bracket {
+            position: fixed;
+            z-index: 110;
+            background: rgba(0, 0, 0, 0.85);
+            border: 1px solid #333;
+            padding: 5px 12px;
+            font-size: 11px;
+            pointer-events: none;
+        }
+
+        .header-bar {
+            top: 0; left: 0; width: 100%;
+            background: #0a0a0a;
+            border-bottom: 1px solid var(--cmd-green);
+            display: flex;
+            justify-content: space-between;
+            padding: 6px 20px;
+            box-sizing: border-box;
+            letter-spacing: 1px;
+        }
+
+        .sys-info { bottom: 45px; right: 20px; border-color: var(--cmd-green); }
+        .live-log { bottom: 45px; left: 20px; width: 280px; height: 80px; overflow: hidden; color: #888; }
+
+        /* --- NAVIGATION TICKER --- */
+        .footer-nav {
+            position: fixed;
+            bottom: 0; left: 0; width: 100%; height: 30px;
+            background: #000;
+            border-top: 1px solid #222;
+            z-index: 120;
+            display: flex;
+            align-items: center;
+            font-size: 10px;
+        }
+
+        .ticker-wrap {
+            white-space: nowrap;
+            animation: tickerMove 35s linear infinite;
+        }
+
+        @keyframes tickerMove { from { transform: translateX(100%); } to { transform: translateX(-100%); } }
+
+        /* --- BOOT REPAIR OVERLAY --- */
+        #boot-repair {
+            position: fixed;
+            inset: 0;
+            background: #000;
+            z-index: 2000;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            transition: opacity 0.5s ease;
+        }
+
+        .boot-console {
+            width: 450px;
+            font-size: 13px;
+            background: #000;
+            border: 1px solid #222;
+            padding: 15px;
+            box-shadow: 0 0 20px rgba(0,0,0,1);
+        }
+
+        .p-bar-bg { width: 100%; height: 2px; background: #111; margin-top: 15px; }
+        .p-bar-fill { height: 100%; background: var(--cmd-green); width: 0%; transition: width 0.1s; }
+
+        .blink { animation: blinker 1s steps(1) infinite; }
+        @keyframes blinker { 50% { opacity: 0; } }
+    </style>
+</head>
+<body>
+
+<div class="crt-overlay"></div>
+
+<header class="header-bar">
+    <div>[ADMIN: TROUBLESHOOTING CONSOLE // GITHUB_NODE_V9]</div>
+    <div>DNS_LOCKED: TRUE | ENCRYPTION: AES-256 | ADAPTER: <span id="node-id">FETCHING...</span></div>
+</header>
+
+<div class="hud-bracket live-log" id="mini-log">
+    > BOOT_LOADER_SECURE...
+</div>
+
+<div class="hud-bracket sys-info">
+    STATUS: <span style="color:var(--cmd-green)">OPTIMAL</span><br>
+    REPAIR_MODE: AUTO<br>
+    THREAT_SCAN: 0 FOUND
+</div>
+
+<div class="footer-nav">
+    <div class="ticker-wrap">
+        SYSTEM_CHECK: ANALYZING CMD_POWERSHELL_SECTORS... [OK] || PURGING GOOGLE_WHITE_BORDERS... [OK] || FIXING DUMMY_VIRUS_X... [SUCCESS] || DOMAIN_DNS_RETENTION: ACTIVE || NAVIGATING DATA CORE...
+    </div>
+</div>
+
+<div id="boot-repair">
+    <div class="boot-console">
+        <div style="color: var(--alert-red); margin-bottom: 10px;">[CRITICAL] SYSTEM MALFUNCTION DETECTED</div>
+        <div id="boot-text">
+            C:\WINDOWS\system32> net start repair_service<br>
+            C:\WINDOWS\system32> crop --force --hide-ui<br>
+        </div>
+        <div class="p-bar-bg"><div id="p-fill" class="p-bar-fill"></div></div>
+    </div>
+</div>
+
+<div class="console-viewport">
+    <iframe 
+        id="target-frame"
+        src="https://script.google.com/macros/s/AKfycbxQmZxLxeBNK6JcRHEFLAUa6hrvgHEcWBFcVJaUou7xV10xuIGsL7U1Ua3cyM5m4KKTBw/exec"
+        sandbox="allow-forms allow-scripts allow-same-origin"
+        scrolling="no">
+    </iframe>
+</div>
+
+<script>
+    const pFill = document.getElementById('p-fill');
+    const boot = document.getElementById('boot-repair');
+    const bText = document.getElementById('boot-text');
+    const mLog = document.getElementById('mini-log');
+    const node = document.getElementById('node-id');
+
+    node.innerText = "G-SERIES_" + Math.floor(Math.random()*8888);
+
+    const repairSteps = [
+        "C:\> sc config dns_lock start=auto",
+        "C:\> netsh interface set adapter cyber_node enable",
+        "C:\> taskkill /f /im google_ui.exe",
+        "C:\> inject --css_mask phosphor_green",
+        "C:\> troubleshooting complete. booting shell..."
+    ];
+
+    let p = 0;
+    let s = 0;
+    
+    const repairLoop = setInterval(() => {
+        if(p < 100) {
+            p += 2.5;
+            pFill.style.width = p + "%";
+            if(p % 20 === 0 && s < repairSteps.length) {
+                bText.innerHTML += `<br>${repairSteps[s]}`;
+                mLog.innerHTML += `<br>> ${repairSteps[s].substring(5)}`;
+                s++;
+            }
+        } else {
+            clearInterval(repairLoop);
+            boot.style.opacity = '0';
+            setTimeout(() => boot.remove(), 500);
+        }
+    }, 50);
+
+    // DNS Retention Force
+    window.onbeforeunload = function() { return "Security lock active."; };
+</script>
+
+</body>
+</html>
